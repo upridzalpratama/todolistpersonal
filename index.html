@@ -1,0 +1,1412 @@
+<!doctype html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Questline</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+<style>
+:root{
+  --bg:#0e1116;--surface:#161b23;--surface-2:#1e2531;--border:#2b3444;--text:#e8ecf2;--muted:#a1abbd;
+  --accent:#f5a524;--accent-ink:#1a1200;--accent-text:#f7b84a;--xp:#9b7bff;--hp:#f2557a;--ok:#35c97a;--danger:#ff7676;
+  --heat0:#1e2531;--heat1:#264d3a;--heat2:#2f7a52;--heat3:#35a86a;--heat4:#4fd98a;
+  --shadow:0 10px 32px rgba(0,0,0,.4);--radius:14px;--font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+[data-theme=light]{
+  --bg:#f3f5f9;--surface:#ffffff;--surface-2:#edf0f5;--border:#d5dbe5;--text:#141922;--muted:#525d6f;
+  --accent:#f5a524;--accent-ink:#1a1200;--accent-text:#8a5200;--xp:#6a4fd6;--hp:#c9284f;--ok:#167a45;--danger:#c0262b;
+  --heat0:#e3e8ef;--heat1:#b7e4c7;--heat2:#74c69d;--heat3:#40a26a;--heat4:#1f7a4a;
+  --shadow:0 10px 32px rgba(20,30,50,.14);
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased;min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent-text)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+
+/* HUD */
+#hud{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.hud{display:flex;align-items:center;gap:16px;padding:10px 0;flex-wrap:wrap}
+.hud-id{display:flex;align-items:center;gap:10px;min-width:0}
+.avatar{font-size:26px;width:44px;height:44px;display:grid;place-items:center;background:var(--surface-2);border-radius:12px;flex:none}
+.hud-name{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.hud-lv{font-size:12px;color:var(--muted)}
+.hud-xp{flex:1;min-width:140px}
+.hud-xp-label{font-size:12px;color:var(--muted);margin-top:3px;display:flex;justify-content:space-between}
+.hud-stats{display:flex;align-items:center;gap:6px}
+.stat{display:inline-flex;align-items:center;gap:4px;padding:0 10px;height:36px;border-radius:999px;background:var(--surface-2);font-size:14px;white-space:nowrap}
+.stat.warn{box-shadow:inset 0 0 0 1px var(--accent)}
+.bar{height:10px;border-radius:999px;background:var(--surface-2);overflow:hidden;position:relative}
+.bar .fill{height:100%;border-radius:inherit;background:var(--c,var(--accent));transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.bar.xp .fill{background:linear-gradient(90deg,var(--xp),color-mix(in srgb,var(--xp) 60%,#fff))}
+.bar.hp .fill{background:linear-gradient(90deg,var(--hp),color-mix(in srgb,var(--hp) 70%,#ffb347))}
+.bar.thin{height:6px}
+.bar.big{height:14px}
+
+/* Tabs */
+#tabs{display:flex;gap:4px;padding:10px 0 0}
+.tab{flex:none;min-height:44px;padding:0 18px;border:0;border-radius:10px 10px 0 0;background:transparent;color:var(--muted);font-weight:600;display:inline-flex;align-items:center;gap:8px;border-bottom:2px solid transparent}
+.tab[aria-selected=true]{color:var(--text);border-bottom-color:var(--accent)}
+.tab .kbd{font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:0 5px}
+main{padding:18px 0 48px}
+
+/* Generic */
+.icon-btn{width:44px;height:44px;border-radius:10px;border:0;background:transparent;display:inline-grid;place-items:center;font-size:18px;color:var(--muted)}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.icon-btn.sm{width:36px;height:36px;font-size:15px}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--danger)}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;font-size:12px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.easy{color:var(--ok)}.pill.medium{color:var(--accent-text)}.pill.hard{color:var(--hp)}
+.pill.xp{color:var(--xp)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c,var(--muted));flex:none;display:inline-block}
+h1,h2,h3{margin:0;line-height:1.25}
+h2{font-size:20px}
+h3{font-size:16px}
+.section-title{display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;font-weight:650}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:var(--radius)}
+.banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);margin-bottom:12px}
+.banner .grow{flex:1;min-width:200px}
+.banner.accent{border-color:color-mix(in srgb,var(--accent) 60%,var(--border))}
+
+/* Forms */
+label.field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-weight:600}
+input[type=text],input[type=number],input[type=date],input[type=month],input[type=search],select,textarea{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);width:100%;color:var(--text)}
+input::placeholder{color:color-mix(in srgb,var(--muted) 80%,transparent)}
+.form-grid{display:grid;gap:12px}
+.form-grid.two{grid-template-columns:1fr 1fr}
+.actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{position:relative}
+.swatch input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0}
+.swatch span{display:block;width:36px;height:36px;border-radius:10px;background:var(--c);border:2px solid transparent}
+.swatch input:checked+span{border-color:var(--text);box-shadow:0 0 0 2px var(--bg) inset}
+.swatch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.chip span{display:inline-grid;place-items:center;min-width:44px;height:44px;padding:0 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-size:14px}
+.chip.emoji span{font-size:22px}
+.chip input:checked+span{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--surface-2))}
+.chip input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Daily */
+.datebar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.datebar h2{flex:1;min-width:180px}
+.quick{display:grid;gap:8px;grid-template-columns:1fr auto auto auto auto;align-items:center;margin-bottom:8px}
+.quick-days{margin:-2px 0 10px}
+.summary{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px}
+.summary .stat{background:var(--surface);border:1px solid var(--border)}
+.group{margin-top:18px}
+.group-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.group-head h3{font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.task{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--c,var(--border));position:relative}
+.task.done .task-title{text-decoration:line-through;color:var(--muted)}
+.task-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;padding:4px 0}
+.task-title{overflow-wrap:anywhere}
+.task-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.task-actions{display:flex}
+.check{width:44px;height:44px;flex:none;border:0;background:transparent;display:grid;place-items:center;padding:0}
+.check .box{width:24px;height:24px;border-radius:7px;border:2px solid var(--c,var(--muted));display:grid;place-items:center;transition:background .15s,border-color .15s,transform .15s}
+.check .box svg{width:14px;height:14px;opacity:0;transform:scale(.4);transition:opacity .15s,transform .15s}
+.check[aria-checked=true] .box{background:var(--c,var(--ok));border-color:var(--c,var(--ok))}
+.check[aria-checked=true] .box svg{opacity:1;transform:scale(1)}
+.check:active .box{transform:scale(.9)}
+details.more{margin-top:24px}
+details.more summary{cursor:pointer;color:var(--muted);min-height:44px;display:flex;align-items:center}
+
+/* Quest & Epic cards */
+.qcard{border-top:4px solid var(--c,var(--border));display:flex;flex-direction:column;gap:10px}
+.qcard.closed{opacity:.6}
+.qcard .boss{display:flex;align-items:center;gap:10px}
+.qcard .boss .face{font-size:30px;line-height:1;transition:transform .3s}
+.qcard.defeated .boss .face{filter:grayscale(1);transform:rotate(-12deg)}
+.kv{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.qcard .tasks .task{padding:2px 4px 2px 8px}
+.qcard .check{width:40px;height:40px}
+.card-actions{display:flex;gap:4px;flex-wrap:wrap;margin-top:auto}
+.yearhead{display:grid;gap:12px;grid-template-columns:2fr 1fr 1fr 1fr}
+.bigstat{font-size:26px;font-weight:700}
+
+/* Heatmap */
+.heat-wrap{overflow-x:auto;padding-bottom:6px}
+.heat{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:12px;gap:3px;width:max-content}
+.heat i{display:block;width:12px;height:12px;border-radius:3px;background:var(--heat0)}
+.heat i.l1{background:var(--heat1)}.heat i.l2{background:var(--heat2)}.heat i.l3{background:var(--heat3)}.heat i.l4{background:var(--heat4)}
+.heat i.pad{background:transparent}
+.heat i.today{outline:1.5px solid var(--text);outline-offset:-1px}
+.heat-months{display:grid;grid-auto-flow:column;grid-auto-columns:12px;gap:3px;font-size:11px;color:var(--muted);height:16px;width:max-content}
+.heat-months span{white-space:nowrap;overflow:visible}
+.legend{display:flex;gap:3px;align-items:center;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* Badges */
+.badges{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.badge{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+.badge .ic{font-size:26px}
+.badge.locked{opacity:.55}
+.badge.locked .ic{filter:grayscale(1)}
+.badge b{display:block;font-size:14px}
+.badge span{font-size:12px;color:var(--muted)}
+
+/* Modal */
+#modal-root[hidden]{display:none}
+.backdrop{position:fixed;inset:0;background:rgba(5,8,12,.6);z-index:50}
+.modal{position:fixed;z-index:51;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 32px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);animation:pop .18s ease-out}
+.modal.wide{width:min(760px,calc(100vw - 24px))}
+.modal-head{display:flex;align-items:center;gap:8px;padding:14px 14px 0 20px}
+.modal-head h2{flex:1;font-size:18px}
+.modal-body{padding:14px 20px 20px}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-47%)}to{opacity:1;transform:translate(-50%,-50%)}}
+.steps{display:flex;gap:6px;margin-bottom:14px}
+.steps i{flex:1;height:4px;border-radius:4px;background:var(--surface-2)}
+.steps i.on{background:var(--accent)}
+.list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.list li{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface-2);border-radius:10px}
+.list li .grow{flex:1;min-width:0;overflow-wrap:anywhere}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin:10px 0}
+.statgrid .card{padding:12px}
+.statgrid b{display:block;font-size:22px}
+.search-results{margin-top:10px}
+.search-results button{width:100%;text-align:left;border:0;background:var(--surface-2);border-radius:10px;padding:10px 12px;min-height:44px;display:flex;gap:10px;align-items:center}
+.search-results button:hover,.search-results button:focus-visible{background:var(--border)}
+
+/* Toasts & effects */
+#toasts{position:fixed;z-index:60;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{pointer-events:auto;max-width:min(360px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);animation:toastIn .25s ease-out;position:relative}
+.toast.error{border-left-color:var(--danger)}
+.toast.badge{border-left-color:var(--xp)}
+.toast.out{opacity:0;transform:translateY(8px);transition:.3s}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.xp-float{position:fixed;z-index:70;pointer-events:none;font-weight:800;color:var(--xp);font-size:15px;animation:floatUp .55s ease-out forwards;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+@keyframes floatUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-34px)}}
+.confetti{position:fixed;z-index:71;width:7px;height:10px;border-radius:2px;pointer-events:none;animation:conf .9s ease-out forwards}
+@keyframes conf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+
+@media (max-width:767px){
+  body{font-size:15px}
+  .hud-id{flex:1}
+  .hud-name{max-width:110px}
+  .hud-stats .icon-btn{width:40px}
+  .stat{padding:0 8px}
+  .hud{gap:8px 10px}
+  .hud-xp{order:3;flex-basis:100%}
+  .hud-stats{margin-left:auto}
+  .hud-stats .icon-btn.opt{display:none}
+  #tabs{position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--surface);border-top:1px solid var(--border);padding:4px 8px calc(4px + env(safe-area-inset-bottom));justify-content:space-around}
+  .tab{flex:1;justify-content:center;border-radius:10px;border-bottom:0;min-height:52px;flex-direction:column;gap:0;font-size:12px}
+  .tab .ico{font-size:18px}
+  .tab[aria-selected=true]{background:var(--surface-2)}
+  .tab .kbd{display:none}
+  main{padding-bottom:96px}
+  #toasts{bottom:84px}
+  .quick{grid-template-columns:1fr 1fr}
+  .quick input[name=title]{grid-column:1/-1}
+  .quick .btn{grid-column:1/-1}
+  .form-grid.two{grid-template-columns:1fr}
+  .yearhead{grid-template-columns:1fr 1fr}
+  .yearhead > :first-child{grid-column:1/-1}
+  .grid{grid-template-columns:1fr}
+}
+@media (min-width:768px){ .tab .ico{font-size:16px} }
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+</style>
+</head>
+<body>
+<a href="#view" class="sr-only">Lompat ke konten</a>
+<header id="hud"><div class="wrap"><div class="hud" id="hud-inner"></div></div></header>
+<div class="wrap">
+  <nav id="tabs" role="tablist" aria-label="Tampilan">
+    <button class="tab" role="tab" data-act="tab" data-view="daily" id="tab-daily" aria-controls="view"><span class="ico" aria-hidden="true">☀️</span>Harian <span class="kbd">1</span></button>
+    <button class="tab" role="tab" data-act="tab" data-view="monthly" id="tab-monthly" aria-controls="view"><span class="ico" aria-hidden="true">🗓️</span>Bulanan <span class="kbd">2</span></button>
+    <button class="tab" role="tab" data-act="tab" data-view="yearly" id="tab-yearly" aria-controls="view"><span class="ico" aria-hidden="true">🏔️</span>Tahunan <span class="kbd">3</span></button>
+  </nav>
+  <main id="view" role="tabpanel" tabindex="-1"></main>
+</div>
+<div id="modal-root" hidden></div>
+<div id="toasts" aria-live="polite" aria-atomic="false"></div>
+<div id="sr" class="sr-only" aria-live="polite"></div>
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+
+<script>
+'use strict';
+/* ============================================================
+   Questline — to-do & goals gamified. Semua data di localStorage.
+   ============================================================ */
+const KEY = 'questline.v1';
+const BACKUP_KEY = 'questline.v1.backup';
+const SCHEMA = 1;
+const MAX_ACTIVE_EPICS = 5;
+const MIN_QUEST_TASKS = 3; // minimal task agar bonus Quest & Boss berlaku (anti-akal-akalan)
+const MIN_EPIC_QUESTS = 3; // minimal Quest tuntas agar Epic dianggap tuntas
+
+const DIFF = { easy: { label: 'Mudah', mult: 1 }, medium: { label: 'Sedang', mult: 1.5 }, hard: { label: 'Sulit', mult: 2.5 } };
+const COLORS = { amber: '#f5a524', emerald: '#2fbf71', sky: '#38a8f5', violet: '#9b7bff', rose: '#f2557a', teal: '#22c2b5' };
+const NEUTRAL = '#8a94a6';
+const AVATARS = ['🧙', '🦊', '🐉', '🦁', '🐺', '🦉', '🤖', '🧝', '🥷', '🐼', '🦄', '🚀'];
+const CATEGORIES = ['Karier', 'Kesehatan', 'Keuangan', 'Belajar', 'Relasi', 'Hobi', 'Spiritual', 'Bisnis'];
+const BOSSES = ['👹', '🐲', '👾', '🦂', '🧌', '🦇', '🐙', '💀'];
+const BADGES = [
+  { id: 'first-step', icon: '👣', name: 'Langkah Pertama', desc: 'Menyelesaikan task pertama', test: p => p.tasksCompleted >= 1 },
+  { id: 'seven-days', icon: '🔥', name: 'Tujuh Hari', desc: 'Streak 7 hari', test: p => p.streak.longest >= 7 },
+  { id: 'thirty-days', icon: '🌕', name: 'Sebulan Penuh', desc: 'Streak 30 hari', test: p => p.streak.longest >= 30 },
+  { id: 'quest-hunter', icon: '🏹', name: 'Pemburu Quest', desc: 'Menuntaskan 5 Quest bulanan', test: p => p.questsCompleted >= 5 },
+  { id: 'year-conqueror', icon: '👑', name: 'Penakluk Tahun', desc: 'Menuntaskan 1 Epic tahunan', test: p => p.epicsCompleted >= 1 },
+  { id: 'early-bird', icon: '🌅', name: 'Bangun Pagi', desc: '10 task selesai sebelum 09.00', test: p => p.earlyCount >= 10 },
+  { id: 'all-clear', icon: '✨', name: 'Beres Total', desc: '7 hari dengan semua task tuntas', test: p => p.allDoneDates.length >= 7 },
+];
+const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const MONTHS_S = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const DAYNAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const DAYS_S = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+/* ---------- utils ---------- */
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); };
+const today = () => ymd(new Date());
+const monthOf = s => s.slice(0, 7);
+const curMonth = () => monthOf(today());
+const curYear = () => new Date().getFullYear();
+const addMonths = (m, n) => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+const daysInMonth = m => { const [y, mm] = m.split('-').map(Number); return new Date(y, mm, 0).getDate(); };
+const lastDayOfMonth = m => `${m}-${pad(daysInMonth(m))}`;
+const daysBetween = (a, b) => Math.round((parseYmd(b) - parseYmd(a)) / 864e5);
+const monthLabel = m => { const [y, mm] = m.split('-').map(Number); return `${MONTHS[mm - 1]} ${y}`; };
+const monthShort = m => { const [y, mm] = m.split('-').map(Number); return `${MONTHS_S[mm - 1]} ${y}`; };
+const dateLabel = s => { const d = parseYmd(s); return `${DAYNAMES[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+const isoLocal = d => {
+  const off = -d.getTimezoneOffset(), sign = off >= 0 ? '+' : '-', a = Math.abs(off);
+  return `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${sign}${pad(Math.floor(a / 60))}:${pad(a % 60)}`;
+};
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => Math.round(n).toLocaleString('id-ID');
+const pct = x => Math.round(x * 100);
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sum = arr => arr.reduce((a, b) => a + b, 0);
+
+/* ---------- game math ---------- */
+const xpForLevel = n => 50 * n * (n - 1); // total XP kumulatif untuk mencapai level n
+function levelFor(xp) {
+  let l = Math.max(1, Math.floor((1 + Math.sqrt(1 + Math.max(0, xp) / 12.5)) / 2));
+  while (xpForLevel(l + 1) <= xp) l++;
+  while (l > 1 && xpForLevel(l) > xp) l--;
+  return l;
+}
+const taskXP = (diff, streak) => Math.round(10 * (DIFF[diff] || DIFF.easy).mult * (1 + Math.min(0.05 * streak, 0.5)));
+const coinsFor = xp => xp > 0 ? Math.max(1, Math.round(xp / 10)) : 0;
+
+/* ---------- state ---------- */
+function freshState() {
+  return {
+    schemaVersion: SCHEMA,
+    player: {
+      name: '', avatar: '🧙', xp: 0, level: 1, coins: 0,
+      streak: { current: 0, longest: 0, lastDoneDate: null, freezeAvailable: 1, freezeMonth: curMonth(), frozenDates: [] },
+      badges: [], xpLog: {}, allDoneDates: [], earlyCount: 0, tasksCompleted: 0, questsCompleted: 0, epicsCompleted: 0, awardedKeys: {},
+    },
+    epics: [], quests: [], tasks: [], recurring: [], rewards: [], redemptions: [],
+    settings: { theme: 'dark', weekStart: 'monday' },
+    meta: {
+      createdAt: today(), lastBackupAt: null, onboarded: false, lastReviewMonth: curMonth(), lastYearReview: curYear(),
+      lastCarryPrompt: null, backupDismissed: null, onboardingStartedAt: null, firstTaskSeconds: null,
+    },
+  };
+}
+function normalize(d) {
+  const f = freshState();
+  const out = Object.assign({}, f, d);
+  out.player = Object.assign({}, f.player, d.player || {});
+  out.player.streak = Object.assign({}, f.player.streak, (d.player || {}).streak || {});
+  out.settings = Object.assign({}, f.settings, d.settings || {});
+  out.meta = Object.assign({}, f.meta, d.meta || {});
+  for (const k of ['epics', 'quests', 'tasks', 'recurring', 'rewards', 'redemptions']) if (!Array.isArray(out[k])) out[k] = [];
+  for (const k of ['badges', 'allDoneDates']) if (!Array.isArray(out.player[k])) out.player[k] = [];
+  if (!Array.isArray(out.player.streak.frozenDates)) out.player.streak.frozenDates = [];
+  for (const k of ['xpLog', 'awardedKeys']) if (!out.player[k] || typeof out.player[k] !== 'object') out.player[k] = {};
+  out.schemaVersion = SCHEMA;
+  return out;
+}
+function validateImport(d) {
+  if (!d || typeof d !== 'object') return 'File bukan objek JSON.';
+  if (typeof d.schemaVersion !== 'number') return 'schemaVersion tidak ditemukan.';
+  if (d.schemaVersion > SCHEMA) return `Versi skema ${d.schemaVersion} lebih baru dari yang didukung (${SCHEMA}).`;
+  if (!d.player || typeof d.player !== 'object') return 'Data player tidak ada.';
+  for (const k of ['epics', 'quests', 'tasks']) if (!Array.isArray(d[k])) return `Bagian "${k}" harus berupa array.`;
+  for (const t of d.tasks) if (!t || typeof t.id !== 'string' || typeof t.title !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(t.date || '')) return 'Ada task dengan struktur tidak valid.';
+  for (const q of d.quests) if (!q || typeof q.id !== 'string' || !/^\d{4}-\d{2}$/.test(q.month || '')) return 'Ada Quest dengan struktur tidak valid.';
+  for (const e of d.epics) if (!e || typeof e.id !== 'string' || typeof e.year !== 'number') return 'Ada Epic dengan struktur tidak valid.';
+  return null;
+}
+
+let storageOk = true, readOnly = false, loadError = null;
+function load() {
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (e) { storageOk = false; return freshState(); }
+  if (!raw) return freshState();
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { loadError = { type: 'corrupt', raw }; readOnly = true; return freshState(); }
+  if (typeof data.schemaVersion !== 'number' || data.schemaVersion > SCHEMA) { loadError = { type: 'version', raw, v: data.schemaVersion }; readOnly = true; return freshState(); }
+  return normalize(data);
+}
+let S = load();
+
+let saveTimer = null;
+function save() { if (readOnly) return; clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 300); }
+function saveNow() {
+  clearTimeout(saveTimer); saveTimer = null;
+  if (readOnly || !storageOk) return true;
+  try {
+    S.player.level = levelFor(S.player.xp);
+    localStorage.setItem(KEY, JSON.stringify(S));
+    return true;
+  } catch (e) {
+    if (isQuota(e)) openQuotaDialog(); else toast('Gagal menyimpan: ' + e.message, 'error');
+    return false;
+  }
+}
+const isQuota = e => e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
+addEventListener('pagehide', () => { if (saveTimer) saveNow(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && saveTimer) saveNow(); });
+
+/* ---------- derived data ---------- */
+const epicById = id => S.epics.find(e => e.id === id);
+const questById = id => S.quests.find(q => q.id === id);
+const epicColor = e => (e && COLORS[e.color]) || NEUTRAL;
+const questColor = q => q ? epicColor(epicById(q.epicId)) : NEUTRAL;
+const taskColor = t => questColor(questById(t.questId));
+function questStats(q) {
+  const ts = S.tasks.filter(t => t.questId === q.id);
+  const done = ts.filter(t => t.done).length;
+  return { total: ts.length, done, pct: ts.length ? done / ts.length : 0, complete: ts.length > 0 && done === ts.length };
+}
+function epicStats(e) {
+  const qs = S.quests.filter(q => q.epicId === e.id && q.status !== 'closed');
+  let total = 0, done = 0, qDone = 0;
+  for (const q of qs) { const s = questStats(q); total += s.total; done += s.done; if (s.complete) qDone++; }
+  // rata-rata progress Quest dibobot jumlah task == total task selesai / total task
+  return { quests: qs.length, qDone, total, done, pct: total ? done / total : 0, complete: qDone >= MIN_EPIC_QUESTS && qDone === qs.length };
+}
+function yearProgress(y) {
+  const es = S.epics.filter(e => e.year === y);
+  return es.length ? sum(es.map(e => epicStats(e).pct)) / es.length : 0;
+}
+const activeEpicCount = (y, exceptId) => S.epics.filter(e => e.year === y && e.id !== exceptId && !epicStats(e).complete).length;
+function syncStatuses() {
+  for (const q of S.quests) if (q.status !== 'closed') q.status = questStats(q).complete ? 'done' : 'active';
+  for (const e of S.epics) e.status = epicStats(e).complete ? 'done' : 'active';
+}
+const doneDate = t => t.completedAt ? t.completedAt.slice(0, 10) : null;
+function doneCounts() {
+  const m = {};
+  for (const t of S.tasks) if (t.done && t.completedAt) { const d = doneDate(t); m[d] = (m[d] || 0) + 1; }
+  return m;
+}
+function bridged(last, td) {
+  const fr = S.player.streak.frozenDates;
+  for (let d = addDays(last, 1); d < td; d = addDays(d, 1)) if (!fr.includes(d)) return false;
+  return true;
+}
+function streakInfo() {
+  const s = S.player.streak, td = today();
+  if (!s.lastDoneDate || !s.current) return { current: 0 };
+  if (s.lastDoneDate === td) return { current: s.current, doneToday: true };
+  if (s.lastDoneDate === addDays(td, -1) || bridged(s.lastDoneDate, td)) return { current: s.current, atRisk: true };
+  if (s.lastDoneDate === addDays(td, -2) && s.freezeAvailable > 0) return { current: s.current, rescuable: true };
+  return { current: 0, broken: true };
+}
+const xpOn = d => S.player.xpLog[d] || 0;
+const xpInRange = prefix => sum(Object.entries(S.player.xpLog).filter(([d]) => d.startsWith(prefix)).map(([, v]) => v));
+function longestRun(prefix) {
+  const counts = doneCounts();
+  const days = new Set([...Object.keys(counts).filter(d => d.startsWith(prefix)), ...S.player.streak.frozenDates.filter(d => d.startsWith(prefix))]);
+  let best = 0;
+  for (const d of days) { if (days.has(addDays(d, -1))) continue; let n = 0, x = d; while (days.has(x)) { n++; x = addDays(x, 1); } best = Math.max(best, n); }
+  return best;
+}
+
+/* ---------- day rollover ---------- */
+function runDayChecks() {
+  const p = S.player, s = p.streak, cm = curMonth(), td = today();
+  if (s.freezeMonth !== cm) { s.freezeAvailable = 1; s.freezeMonth = cm; }
+  const info = streakInfo();
+  if (info.broken && s.current > 0) {
+    s.current = 0;
+    setTimeout(() => toast('Streak kembali ke nol. Satu task selesai hari ini sudah cukup untuk mulai lagi.'), 600);
+  }
+  // pangkas data bantu lama
+  const cut = addDays(td, -120);
+  for (const k of Object.keys(p.awardedKeys)) if (p.awardedKeys[k] < cut) delete p.awardedKeys[k];
+  s.frozenDates = s.frozenDates.filter(d => d >= addDays(td, -60));
+  generateRecurring();
+  save();
+}
+function recurMatches(r, d) {
+  if (d < r.startDate) return false;
+  const wd = parseYmd(d).getDay();
+  if (r.rule === 'daily') return true;
+  if (r.rule === 'weekly') return wd === parseYmd(r.startDate).getDay();
+  if (r.rule === 'weekdays') return wd >= 1 && wd <= 5;
+  if (r.rule === 'days') return (r.days || []).includes(wd);
+  return false;
+}
+const RULE_LABEL = r => r.rule === 'daily' ? 'Setiap hari' : r.rule === 'weekly' ? `Setiap ${DAYNAMES[parseYmd(r.startDate).getDay()]}` : r.rule === 'weekdays' ? 'Hari kerja (Sen–Jum)' : (r.days || []).slice().sort().map(i => DAYS_S[i]).join(', ');
+function generateRecurring() {
+  const td = today();
+  for (const r of S.recurring) {
+    if (r.paused || (r.lastGenerated && r.lastGenerated >= td)) continue;
+    if (recurMatches(r, td) && !S.tasks.some(t => t.recurrence && t.recurrence.templateId === r.id && t.date === td)) {
+      S.tasks.push(newTask({ title: r.title, date: td, difficulty: r.difficulty, questId: r.questId && questById(r.questId) ? r.questId : null, recurrence: { templateId: r.id } }));
+    }
+    r.lastGenerated = td;
+  }
+}
+function newTask({ title, date, difficulty = 'medium', questId = null, recurrence = null }) {
+  return { id: uid('t'), questId: questId || null, title: title.trim(), date, difficulty, done: false, completedAt: null, xpAwarded: null, recurrence, createdAt: isoLocal(new Date()) };
+}
+
+/* ---------- core action: complete a task ---------- */
+function toggleTask(id, srcEl) {
+  const t = S.tasks.find(x => x.id === id); if (!t) return;
+  if (t.done) {
+    t.done = false; t.completedAt = null;
+    announce(`"${t.title}" ditandai belum selesai.`);
+    save(); render(); return;
+  }
+  const rect = srcEl && srcEl.getBoundingClientRect();
+  const now = new Date(), td = ymd(now), p = S.player, iso = isoLocal(now);
+  const prevLevel = levelFor(p.xp);
+  t.done = true; t.completedAt = iso;
+
+  // streak dihitung dari tanggal penyelesaian (hari ini), bukan tanggal task
+  const s = p.streak;
+  if (s.lastDoneDate !== td) {
+    s.current = (s.lastDoneDate && s.current > 0 && (s.lastDoneDate === addDays(td, -1) || bridged(s.lastDoneDate, td))) ? s.current + 1 : 1;
+    s.lastDoneDate = td;
+    s.longest = Math.max(s.longest, s.current);
+  }
+
+  let gained = 0; const bonuses = [];
+  const award = (xp, label) => { gained += xp; p.xpLog[td] = (p.xpLog[td] || 0) + xp; p.coins += coinsFor(xp); if (label) bonuses.push(`${label} · +${xp} XP`); };
+
+  if (t.xpAwarded == null) {
+    const key = t.title.trim().toLowerCase().replace(/\s+/g, ' ') + '|' + t.date;
+    if (p.awardedKeys[key]) {
+      t.xpAwarded = 0; // task sama di tanggal sama sudah pernah memberi XP (hapus-buat-ulang)
+    } else {
+      const xp = taskXP(t.difficulty, s.current);
+      t.xpAwarded = xp; p.awardedKeys[key] = t.date;
+      p.tasksCompleted++;
+      if (now.getHours() < 9) p.earlyCount++;
+      award(xp);
+    }
+  }
+
+  const todays = S.tasks.filter(x => x.date === td);
+  if (todays.length && todays.every(x => x.done) && !p.allDoneDates.includes(td)) { p.allDoneDates.push(td); award(25, 'Semua task hari ini beres'); }
+
+  const q = t.questId && questById(t.questId);
+  if (q && q.status !== 'closed') {
+    const qs = questStats(q);
+    if (qs.complete && qs.total >= MIN_QUEST_TASKS) {
+      if (!q.bonusAwarded) { q.bonusAwarded = true; q.completedAt = iso; p.questsCompleted++; award(200, `Quest tuntas: ${q.title}`); }
+      if (!q.bossDefeatedAt && td <= lastDayOfMonth(q.month)) { q.bossDefeatedAt = iso; award(300, 'Boss dikalahkan'); }
+    }
+    const e = q.epicId && epicById(q.epicId);
+    if (e && !e.bonusAwarded && epicStats(e).complete) {
+      e.bonusAwarded = true; e.completedAt = iso; p.epicsCompleted++; award(1000, `Epic tuntas: ${e.title}`);
+    }
+  }
+
+  p.xp += gained;
+  if (S.meta.firstTaskSeconds == null && S.meta.onboardingStartedAt) S.meta.firstTaskSeconds = Math.round((now - new Date(S.meta.onboardingStartedAt)) / 1000);
+
+  save(); render();
+  if (gained > 0 && rect) floatXP(rect, gained);
+  announce(`"${t.title}" selesai${gained ? `, +${gained} XP` : ''}.`);
+  if (bonuses.length) setTimeout(() => toast(bonuses.map(b => '🎉 ' + esc(b)).join('<br>'), '', bonuses.length > 1), 120);
+  const lv = levelFor(p.xp);
+  if (lv > prevLevel) setTimeout(() => toast(`⬆️ Naik ke Level ${lv}!`, 'badge', true), 200);
+  checkBadges();
+}
+function checkBadges() {
+  const p = S.player;
+  for (const b of BADGES) if (!p.badges.includes(b.id) && b.test(p)) {
+    p.badges.push(b.id);
+    setTimeout(() => toast(`${b.icon} Badge terbuka: <b>${esc(b.name)}</b>`, 'badge', true), 350);
+  }
+  save();
+}
+
+/* ---------- feedback ---------- */
+function announce(msg) { const el = $('#sr'); el.textContent = ''; setTimeout(() => el.textContent = msg, 30); }
+function toast(html, type = '', confetti = false) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type; el.innerHTML = html;
+  $('#toasts').appendChild(el);
+  if (confetti) burst(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, 3600);
+}
+function floatXP(rect, xp) {
+  if (reduceMotion()) return;
+  const el = document.createElement('div');
+  el.className = 'xp-float'; el.textContent = `+${xp} XP`; el.setAttribute('aria-hidden', 'true');
+  el.style.left = (rect.left + rect.width / 2 - 20) + 'px'; el.style.top = (rect.top - 6) + 'px';
+  document.body.appendChild(el); setTimeout(() => el.remove(), 600);
+}
+function burst(anchor) {
+  if (reduceMotion()) return;
+  const r = anchor.getBoundingClientRect(), cols = Object.values(COLORS);
+  for (let i = 0; i < 16; i++) {
+    const c = document.createElement('i'); c.className = 'confetti';
+    c.style.left = (r.left + r.width * Math.random()) + 'px'; c.style.top = (r.top + 6) + 'px';
+    c.style.background = cols[i % cols.length];
+    c.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); c.style.setProperty('--dy', (-40 - Math.random() * 70) + 'px'); c.style.setProperty('--r', (Math.random() * 540) + 'deg');
+    document.body.appendChild(c); setTimeout(() => c.remove(), 950);
+  }
+}
+function download(name, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+/* ---------- view state ---------- */
+let view = 'daily', viewDate = today(), viewMonth = curMonth(), viewYear = curYear();
+const quickPrefs = { difficulty: 'medium', questId: '', rule: '' };
+
+/* ---------- render ---------- */
+function bar(key, frac, cls = '', label = '', color) {
+  const w = Math.max(0, Math.min(100, frac * 100)).toFixed(1) + '%';
+  return `<div class="bar ${cls}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(frac * 100)}" aria-label="${esc(label)}"${color ? ` style="--c:${color}"` : ''}><div class="fill" data-bar="${key}" style="width:${w}"></div></div>`;
+}
+function render() {
+  syncStatuses();
+  const prev = {}; document.querySelectorAll('[data-bar]').forEach(el => prev[el.dataset.bar] = el.style.width);
+  const fkey = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.fkey : null;
+  document.documentElement.dataset.theme = S.settings.theme === 'light' ? 'light' : 'dark';
+  $('#hud-inner').innerHTML = renderHUD();
+  document.querySelectorAll('.tab').forEach(b => { const on = b.dataset.view === view; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
+  $('#view').setAttribute('aria-labelledby', 'tab-' + view);
+  $('#view').innerHTML = view === 'daily' ? renderDaily() : view === 'monthly' ? renderMonthly() : renderYearly();
+  // animasikan bar dari nilai lama ke nilai baru
+  document.querySelectorAll('[data-bar]').forEach(el => {
+    const old = prev[el.dataset.bar], target = el.style.width;
+    if (old && old !== target) { el.style.transition = 'none'; el.style.width = old; void el.offsetWidth; el.style.transition = ''; el.style.width = target; }
+  });
+  if (fkey) { const el = document.querySelector(`[data-fkey="${CSS.escape(fkey)}"]`); if (el) el.focus({ preventScroll: true }); }
+}
+function renderHUD() {
+  const p = S.player, lv = levelFor(p.xp), base = xpForLevel(lv), need = xpForLevel(lv + 1) - base, into = p.xp - base;
+  const st = streakInfo();
+  const streakTitle = st.doneToday ? 'Streak aman hari ini' : st.atRisk ? 'Selesaikan 1 task hari ini untuk menjaga streak' : st.rescuable ? 'Kemarin terlewat — Streak Freeze bisa dipakai' : 'Streak';
+  return `
+    <div class="hud-id"><span class="avatar" aria-hidden="true">${esc(p.avatar)}</span>
+      <div><div class="hud-name">${esc(p.name || 'Petualang')}</div><div class="hud-lv">Level <b>${lv}</b> · ${fmt(p.xp)} XP</div></div></div>
+    <div class="hud-xp">${bar('hud-xp', into / need, 'xp', 'XP menuju level berikutnya')}
+      <div class="hud-xp-label"><span>${fmt(into)} / ${fmt(need)} XP</span><span>+${fmt(xpOn(today()))} hari ini</span></div></div>
+    <div class="hud-stats">
+      <span class="stat ${st.atRisk || st.rescuable ? 'warn' : ''}" title="${streakTitle}" aria-label="Streak ${st.current} hari. ${streakTitle}">${st.rescuable ? '❄️' : '🔥'} <b>${st.current}</b></span>
+      <span class="stat" title="Coin" aria-label="${p.coins} coin">🪙 <b>${fmt(p.coins)}</b></span>
+      <button class="icon-btn" data-act="open-shop" aria-label="Reward Shop" title="Reward Shop">🛒</button>
+      <button class="icon-btn opt" data-act="open-search" aria-label="Cari (/)" title="Cari (/)">🔍</button>
+      <button class="icon-btn opt" data-act="toggle-theme" aria-label="Ganti tema" title="Ganti tema">🌓</button>
+      <button class="icon-btn" data-act="open-settings" aria-label="Pengaturan & backup" title="Pengaturan & backup">⚙️</button>
+    </div>`;
+}
+function questOptions(selected, filter) {
+  const qs = S.quests.filter(q => q.status !== 'closed' || q.id === selected).filter(filter || (() => true));
+  return `<option value="">— Tanpa Quest —</option>` + qs.map(q => `<option value="${q.id}" ${q.id === selected ? 'selected' : ''}>${esc(q.title)} (${monthShort(q.month)})</option>`).join('');
+}
+function taskRow(t, compact) {
+  const c = taskColor(t), rec = t.recurrence ? S.recurring.find(r => r.id === t.recurrence.templateId) : null;
+  return `<li class="task ${t.done ? 'done' : ''}" style="--c:${c}">
+    <button class="check" role="checkbox" aria-checked="${t.done}" aria-label="Selesai: ${esc(t.title)}" data-act="toggle" data-id="${t.id}" data-fkey="chk-${t.id}">
+      <span class="box"><svg viewBox="0 0 16 16" fill="none" stroke="#0e1116" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span></button>
+    <div class="task-main"><span class="task-title">${esc(t.title)}</span>
+      <span class="task-meta"><span class="pill ${t.difficulty}">${DIFF[t.difficulty]?.label || ''}</span>${rec ? `<span class="pill" title="${esc(RULE_LABEL(rec))}">🔁 ${esc(RULE_LABEL(rec))}</span>` : ''}${t.done && t.xpAwarded ? `<span class="pill xp">+${t.xpAwarded} XP</span>` : ''}${compact ? `<span class="pill">${parseYmd(t.date).getDate()} ${MONTHS_S[parseYmd(t.date).getMonth()]}</span>` : ''}</span></div>
+    <div class="task-actions"><button class="icon-btn sm" data-act="edit-task" data-id="${t.id}" aria-label="Edit ${esc(t.title)}" title="Edit">✎</button>${compact ? '' : `<button class="icon-btn sm" data-act="del-task" data-id="${t.id}" aria-label="Hapus ${esc(t.title)}" title="Hapus">🗑</button>`}</div>
+  </li>`;
+}
+function renderBanners() {
+  const out = [], st = streakInfo(), td = today();
+  if (!storageOk) out.push(`<div class="banner accent" role="alert"><span class="grow">⚠️ Penyimpanan browser tidak tersedia. Data hanya bertahan selama tab ini terbuka — export sebelum menutup.</span><button class="btn sm" data-act="export">Export JSON</button></div>`);
+  if (st.rescuable) out.push(`<div class="banner accent"><span class="grow">❄️ Kemarin terlewat. Pakai <b>Streak Freeze</b> (sisa ${S.player.streak.freezeAvailable} bulan ini) untuk menyelamatkan streak ${st.current} hari?</span><button class="btn sm primary" data-act="use-freeze">Pakai Freeze</button></div>`);
+  const m = curMonth();
+  if (td >= addDays(lastDayOfMonth(m), -2) && (!S.meta.lastBackupAt || monthOf(S.meta.lastBackupAt) !== m) && S.meta.backupDismissed !== td)
+    out.push(`<div class="banner"><span class="grow">💾 Akhir bulan — saatnya backup data ke file JSON.</span><button class="btn sm primary" data-act="export">Export</button><button class="btn sm ghost" data-act="dismiss-backup">Nanti</button></div>`);
+  return out.join('');
+}
+function renderDaily() {
+  const td = today(), d = viewDate, isToday = d === td;
+  const ts = S.tasks.filter(t => t.date === d);
+  const done = ts.filter(t => t.done).length;
+  const groups = new Map();
+  for (const t of ts) { const k = t.questId && questById(t.questId) ? t.questId : ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); }
+  const keys = [...groups.keys()].sort((a, b) => (a === '') - (b === '') || (questById(a)?.title || '').localeCompare(questById(b)?.title || ''));
+  const vm = monthOf(d);
+  const qPref = quickPrefs.questId && S.quests.some(q => q.id === quickPrefs.questId && q.month === vm && q.status !== 'closed') ? quickPrefs.questId : '';
+  const groupHtml = keys.map(k => {
+    const q = questById(k), list = groups.get(k).slice().sort((a, b) => a.done - b.done);
+    const qs = q && questStats(q);
+    return `<section class="group" aria-label="${esc(q ? q.title : 'Tanpa Quest')}">
+      <div class="group-head"><span class="dot" style="--c:${questColor(q)}"></span><h3>${q ? esc(q.title) : 'Tanpa Quest'}</h3>
+      ${q ? `<span class="pill" title="HP boss">👹 ${qs.total - qs.done}/${qs.total} HP</span>` : ''}</div>
+      <ul class="tasks">${list.map(t => taskRow(t)).join('')}</ul></section>`;
+  }).join('');
+  return `
+    ${renderBanners()}
+    <div class="datebar">
+      <button class="icon-btn" data-act="day-prev" aria-label="Hari sebelumnya">‹</button>
+      <h2>${isToday ? 'Hari ini · ' : ''}<span class="muted" style="font-weight:500">${dateLabel(d)}</span></h2>
+      ${isToday ? '' : '<button class="btn sm" data-act="day-today">Hari ini</button>'}
+      <button class="icon-btn" data-act="day-next" aria-label="Hari berikutnya">›</button>
+    </div>
+    <form class="quick" data-form="quick" autocomplete="off">
+      <input type="text" name="title" placeholder="Tambah task… (tekan N)" aria-label="Judul task baru" data-fkey="quick" maxlength="200" required>
+      <select name="difficulty" aria-label="Kesulitan">${Object.entries(DIFF).map(([k, v]) => `<option value="${k}" ${k === quickPrefs.difficulty ? 'selected' : ''}>${v.label}</option>`).join('')}</select>
+      <select name="questId" aria-label="Quest">${questOptions(qPref, q => q.month === vm)}</select>
+      <select name="rule" aria-label="Pengulangan" data-act-change="rule">
+        <option value="">Sekali</option><option value="daily">Harian</option><option value="weekly">Mingguan</option><option value="weekdays">Hari kerja</option><option value="days">Hari tertentu…</option>
+      </select>
+      <button class="btn primary" type="submit">Tambah</button>
+      <div class="quick-days chips" id="quick-days" hidden style="grid-column:1/-1" role="group" aria-label="Pilih hari">
+        ${[1, 2, 3, 4, 5, 6, 0].map(i => `<label class="chip"><input type="checkbox" name="days" value="${i}"><span>${DAYS_S[i]}</span></label>`).join('')}
+      </div>
+    </form>
+    <div class="summary">
+      <span class="stat">✅ <b>${done}/${ts.length}</b>&nbsp;selesai</span>
+      <span class="stat">⚡ <b>${fmt(isToday ? xpOn(td) : xpOn(d))}</b>&nbsp;XP ${isToday ? 'hari ini' : 'di hari ini'}</span>
+      ${ts.length && done === ts.length ? '<span class="stat">✨ Semua beres!</span>' : ''}
+    </div>
+    ${ts.length ? groupHtml : `<div class="empty" style="margin-top:14px">${isToday ? 'Belum ada task hari ini. Tulis satu langkah kecil yang menggerakkan Quest-mu.' : 'Tidak ada task di tanggal ini.'}</div>`}
+    ${S.recurring.length ? `<details class="more"><summary>🔁 Task berulang (${S.recurring.length})</summary><ul class="list">${S.recurring.map(r => `<li><span class="grow">${esc(r.title)} <span class="muted small">· ${esc(RULE_LABEL(r))}${r.questId && questById(r.questId) ? ' · ' + esc(questById(r.questId).title) : ''}</span></span><button class="btn sm danger" data-act="del-recur" data-id="${r.id}">Hentikan</button></li>`).join('')}</ul></details>` : ''}`;
+}
+function bossFace(q) { let h = 0; for (const c of q.id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return BOSSES[h % BOSSES.length]; }
+function renderMonthly() {
+  const m = viewMonth, cm = curMonth(), td = today();
+  const qs = S.quests.filter(q => q.month === m).sort((a, b) => (a.status === 'closed') - (b.status === 'closed'));
+  const tasksDone = S.tasks.filter(t => t.done && t.completedAt && t.completedAt.startsWith(m)).length;
+  const qDone = qs.filter(q => questStats(q).complete).length;
+  const remain = m === cm ? daysInMonth(m) - parseYmd(td).getDate() + 1 : m > cm ? null : 0;
+  const cards = qs.map(q => {
+    const st = questStats(q), e = epicById(q.epicId), c = questColor(q), hp = st.total - st.done;
+    const defeated = !!q.bossDefeatedAt, closed = q.status === 'closed';
+    let timeTxt = remain === null ? `Mulai ${monthLabel(m)}` : remain > 0 ? `${remain} hari tersisa` : 'Bulan berakhir';
+    const preview = S.tasks.filter(t => t.questId === q.id).sort((a, b) => a.done - b.done || a.date.localeCompare(b.date));
+    return `<article class="card qcard ${defeated ? 'defeated' : ''} ${closed ? 'closed' : ''}" style="--c:${c}">
+      <div class="spread"><div style="min-width:0"><h3>${esc(q.title)}</h3><div class="muted small">${e ? `<span class="dot" style="--c:${c}"></span> ${esc(e.title)}` : 'Quest mandiri'}</div></div>
+        ${closed ? '<span class="pill">Ditutup</span>' : defeated ? '<span class="pill" style="color:var(--ok)">🏆 Boss kalah</span>' : st.complete ? '<span class="pill" style="color:var(--ok)">Tuntas</span>' : ''}</div>
+      <div class="boss"><span class="face" aria-hidden="true">${bossFace(q)}</span><div style="flex:1">
+        <div class="kv"><span>HP Boss</span><span><b style="color:var(--text)">${hp}</b> / ${st.total}</span></div>
+        ${bar('hp-' + q.id, st.total ? hp / st.total : 0, 'hp big', `HP boss ${q.title}`)}</div></div>
+      <div class="kv"><span>Progress ${pct(st.pct)}%</span><span>${timeTxt}</span></div>
+      ${bar('qp-' + q.id, st.pct, 'thin', `Progress ${q.title}`, c)}
+      ${!closed && st.total < MIN_QUEST_TASKS ? `<div class="muted small">Tambah minimal ${MIN_QUEST_TASKS} task agar bonus Quest & Boss berlaku.</div>` : ''}
+      ${preview.length ? `<details><summary class="muted small" style="cursor:pointer;min-height:32px;display:flex;align-items:center">Lihat ${preview.length} task</summary><ul class="tasks" style="margin-top:6px">${preview.map(t => taskRow(t, true)).join('')}</ul></details>` : ''}
+      <div class="card-actions">
+        ${closed ? '' : `<button class="btn sm" data-act="add-task-quest" data-id="${q.id}">＋ Task</button>`}
+        <button class="btn sm ghost" data-act="edit-quest" data-id="${q.id}">Edit</button>
+        <button class="btn sm ghost" data-act="${closed ? 'reopen-quest' : 'close-quest'}" data-id="${q.id}">${closed ? 'Buka lagi' : 'Tutup'}</button>
+        <button class="btn sm ghost danger" data-act="del-quest" data-id="${q.id}">Hapus</button>
+      </div></article>`;
+  }).join('');
+  return `
+    <div class="datebar">
+      <button class="icon-btn" data-act="month-prev" aria-label="Bulan sebelumnya">‹</button>
+      <h2>${monthLabel(m)}${m === cm ? ' <span class="pill">bulan ini</span>' : ''}</h2>
+      <button class="icon-btn" data-act="month-next" aria-label="Bulan berikutnya">›</button>
+    </div>
+    <div class="summary" style="margin-bottom:14px">
+      <span class="stat">🏹 <b>${qDone}/${qs.filter(q => q.status !== 'closed').length}</b>&nbsp;Quest tuntas</span>
+      <span class="stat">✅ <b>${tasksDone}</b>&nbsp;task selesai</span>
+      <span class="stat">⚡ <b>${fmt(xpInRange(m))}</b>&nbsp;XP</span>
+      <span style="flex:1"></span>
+      <button class="btn sm" data-act="open-review" data-month="${m}">📊 Review</button>
+      <button class="btn sm primary" data-act="new-quest">＋ Quest</button>
+    </div>
+    ${qs.length ? `<div class="grid">${cards}</div>` : `<div class="empty">Belum ada Quest untuk ${monthLabel(m)}. Pecah Epic tahunan jadi target bulan ini.</div>`}`;
+}
+function heatmap(y) {
+  const counts = doneCounts(), td = today();
+  const start = `${y}-01-01`, end = `${y}-12-31`;
+  const ws = S.settings.weekStart === 'sunday' ? 0 : 1;
+  const offset = (parseYmd(start).getDay() - ws + 7) % 7;
+  let cells = '', months = '', col = 0, total = 0;
+  const monthCols = {};
+  for (let i = 0; i < offset; i++) cells += '<i class="pad"></i>';
+  let idx = offset;
+  for (let d = start; d <= end; d = addDays(d, 1), idx++) {
+    const n = counts[d] || 0; total += n;
+    const lv = n === 0 ? 0 : n === 1 ? 1 : n <= 3 ? 2 : n <= 5 ? 3 : 4;
+    col = Math.floor(idx / 7);
+    const mm = Number(d.slice(5, 7)) - 1; if (!(mm in monthCols)) monthCols[mm] = col;
+    cells += `<i class="l${lv}${d === td ? ' today' : ''}" title="${d}: ${n} task"></i>`;
+  }
+  const cols = col + 1;
+  for (let c = 0; c < cols; c++) { const mm = Object.keys(monthCols).find(k => monthCols[k] === c); months += `<span>${mm != null ? MONTHS_S[mm] : ''}</span>`; }
+  return `<div class="heat-wrap" role="img" aria-label="Heatmap konsistensi ${y}: ${total} task selesai"><div class="heat-months" aria-hidden="true">${months}</div><div class="heat">${cells}</div></div>
+    <div class="legend" aria-hidden="true">Sedikit <i style="background:var(--heat0)"></i><i style="background:var(--heat1)"></i><i style="background:var(--heat2)"></i><i style="background:var(--heat3)"></i><i style="background:var(--heat4)"></i> Banyak · ${total} task selesai</div>`;
+}
+function renderYearly() {
+  const y = viewYear, es = S.epics.filter(e => e.year === y);
+  const yp = yearProgress(y), active = activeEpicCount(y);
+  const yTasks = S.tasks.filter(t => t.done && t.completedAt && t.completedAt.startsWith(String(y))).length;
+  const cards = es.map(e => {
+    const st = epicStats(e), c = epicColor(e);
+    return `<article class="card qcard" style="--c:${c}">
+      <div class="spread"><div style="min-width:0"><h3>${esc(e.title)}</h3><div class="muted small">${esc(e.category || 'Umum')}${e.targetMetric ? ' · 🎯 ' + esc(e.targetMetric) : ''}</div></div>
+      ${st.complete ? '<span class="pill" style="color:var(--ok)">👑 Tuntas</span>' : ''}</div>
+      <div class="kv"><span>Progress</span><span><b style="color:var(--text)">${pct(st.pct)}%</b></span></div>
+      ${bar('ep-' + e.id, st.pct, '', `Progress ${e.title}`, c)}
+      <div class="kv"><span>${st.qDone}/${st.quests} Quest tuntas</span><span>${st.done}/${st.total} task</span></div>
+      ${!st.complete && st.qDone < MIN_EPIC_QUESTS ? `<div class="muted small">Epic tuntas setelah minimal ${MIN_EPIC_QUESTS} Quest tuntas.</div>` : ''}
+      <div class="card-actions">
+        <button class="btn sm" data-act="new-quest" data-epic="${e.id}">＋ Quest</button>
+        <button class="btn sm ghost" data-act="edit-epic" data-id="${e.id}">Edit</button>
+        <button class="btn sm ghost danger" data-act="del-epic" data-id="${e.id}">Hapus</button>
+      </div></article>`;
+  }).join('');
+  const p = S.player;
+  return `
+    <div class="datebar">
+      <button class="icon-btn" data-act="year-prev" aria-label="Tahun sebelumnya">‹</button>
+      <h2>Tahun ${y}</h2>
+      <button class="icon-btn" data-act="year-next" aria-label="Tahun berikutnya">›</button>
+    </div>
+    <div class="yearhead">
+      <div class="card"><div class="kv"><span>Progress tahun ${y}</span><span><b style="color:var(--text)">${pct(yp)}%</b></span></div><div style="margin-top:8px">${bar('yr-' + y, yp, 'big', `Progress tahun ${y}`)}</div></div>
+      <div class="card"><div class="muted small">Epic aktif</div><div class="bigstat">${active}/${MAX_ACTIVE_EPICS}</div></div>
+      <div class="card"><div class="muted small">Task selesai</div><div class="bigstat">${fmt(yTasks)}</div></div>
+      <div class="card"><div class="muted small">XP tahun ini</div><div class="bigstat">${fmt(xpInRange(String(y)))}</div></div>
+    </div>
+    <div class="section-title"><span style="flex:1">Epic ${y}</span>
+      <button class="btn sm" data-act="open-year-review" data-year="${y}">📜 Rekap</button>
+      <button class="btn sm primary" data-act="new-epic" ${active >= MAX_ACTIVE_EPICS ? 'disabled title="Maksimal 5 Epic aktif"' : ''}>＋ Epic</button></div>
+    ${es.length ? `<div class="grid">${cards}</div>` : `<div class="empty">Belum ada Epic untuk ${y}.</div>`}
+    <div class="section-title">Konsistensi</div>
+    <div class="card">${heatmap(y)}</div>
+    <div class="section-title">Badge · ${p.badges.length}/${BADGES.length}</div>
+    <div class="badges">${BADGES.map(b => { const on = p.badges.includes(b.id); return `<div class="badge ${on ? '' : 'locked'}" title="${esc(b.desc)}"><span class="ic" aria-hidden="true">${b.icon}</span><div><b>${esc(b.name)}</b><span>${on ? 'Terbuka' : esc(b.desc)}</span></div></div>`; }).join('')}</div>
+    <div class="section-title">Statistik</div>
+    <div class="statgrid">
+      <div class="card"><span class="muted small">Level</span><b>${levelFor(p.xp)}</b></div>
+      <div class="card"><span class="muted small">Total XP</span><b>${fmt(p.xp)}</b></div>
+      <div class="card"><span class="muted small">Streak terpanjang</span><b>${p.streak.longest} hari</b></div>
+      <div class="card"><span class="muted small">Quest tuntas</span><b>${p.questsCompleted}</b></div>
+      ${S.meta.firstTaskSeconds != null ? `<div class="card"><span class="muted small">Waktu ke task pertama</span><b>${Math.floor(S.meta.firstTaskSeconds / 60)}m ${S.meta.firstTaskSeconds % 60}d</b></div>` : ''}
+    </div>`;
+}
+
+/* ---------- modal system ---------- */
+let modal = null; const modalQueue = [];
+function openModal(cfg) { if (modal) closeModal({ skipQueue: true }); modal = Object.assign({ dismissable: true }, cfg, { returnFocus: cfg.returnFocus || document.activeElement }); drawModal(true); }
+function drawModal(focus) {
+  const root = $('#modal-root');
+  if (!modal) { root.innerHTML = ''; root.hidden = true; return; }
+  root.hidden = false;
+  root.innerHTML = `<div class="backdrop" ${modal.dismissable ? 'data-act="modal-close"' : ''}></div>
+    <div class="modal ${modal.wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head"><h2 id="modal-title">${modal.title}</h2>${modal.dismissable ? '<button class="icon-btn" data-act="modal-close" aria-label="Tutup">✕</button>' : ''}</div>
+      <div class="modal-body">${modal.body()}</div></div>`;
+  const box = root.querySelector('.modal');
+  modal.onMount && modal.onMount(box);
+  if (focus !== false) { const f = box.querySelector('[autofocus]') || box.querySelector('input,select,textarea,button:not([data-act=modal-close])') || box; f.focus(); }
+}
+function refreshModal() { if (modal) drawModal(false); }
+function closeModal(opts = {}) {
+  if (!modal) return;
+  const m = modal; modal = null; drawModal();
+  m.onClose && m.onClose();
+  if (!opts.skipQueue) { if (m.returnFocus && document.contains(m.returnFocus)) m.returnFocus.focus(); nextQueued(); }
+}
+function queueModal(fn) { modalQueue.push(fn); if (!modal) nextQueued(); }
+function nextQueued() { if (modal) return; const fn = modalQueue.shift(); if (fn) fn(); }
+
+/* ---------- forms: epic / quest / task ---------- */
+function openEpicForm(id) {
+  const e = id ? epicById(id) : null, y = e ? e.year : viewYear;
+  openModal({
+    title: e ? 'Edit Epic' : 'Epic tahunan baru',
+    body: () => `<form class="form-grid" data-form="epic" data-id="${e ? e.id : ''}">
+      <label class="field">Judul Epic<input type="text" name="title" required maxlength="120" value="${esc(e?.title)}" placeholder="mis. Bangun agensi AI marketing" autofocus></label>
+      <div class="form-grid two">
+        <label class="field">Tahun<input type="number" name="year" required min="2000" max="2100" value="${y}"></label>
+        <label class="field">Kategori<input type="text" name="category" list="cats" maxlength="40" value="${esc(e?.category || '')}" placeholder="Karier"></label>
+      </div>
+      <datalist id="cats">${CATEGORIES.map(c => `<option value="${c}">`).join('')}</datalist>
+      <label class="field">Target terukur<input type="text" name="targetMetric" maxlength="120" value="${esc(e?.targetMetric || '')}" placeholder="mis. 3 klien retainer"></label>
+      <fieldset style="border:0;padding:0;margin:0"><legend class="muted small" style="font-weight:600;margin-bottom:6px">Warna</legend>
+        <div class="swatches">${Object.entries(COLORS).map(([k, v], i) => `<label class="swatch" title="${k}"><input type="radio" name="color" value="${k}" ${(e ? e.color === k : i === 0) ? 'checked' : ''} aria-label="${k}"><span style="--c:${v}"></span></label>`).join('')}</div></fieldset>
+      <p class="muted small" style="margin:0">Maksimal ${MAX_ACTIVE_EPICS} Epic aktif per tahun — fokus lebih penting dari banyak.</p>
+      <div class="actions"><button type="button" class="btn ghost" data-act="modal-close">Batal</button><button class="btn primary">${e ? 'Simpan' : 'Buat Epic'}</button></div>
+    </form>`,
+  });
+}
+function saveEpicFromForm(f, fd, existingId) {
+  const title = fd.get('title').trim(), year = Number(fd.get('year'));
+  if (!title) return 'Judul wajib diisi.';
+  if (!Number.isInteger(year)) return 'Tahun tidak valid.';
+  const e = existingId ? epicById(existingId) : null;
+  const wasComplete = e && epicStats(e).complete;
+  if (!wasComplete && activeEpicCount(year, existingId) >= MAX_ACTIVE_EPICS) return `Sudah ada ${MAX_ACTIVE_EPICS} Epic aktif di ${year}. Tuntaskan atau hapus salah satu dulu.`;
+  const data = { title, year, category: fd.get('category').trim() || 'Umum', targetMetric: fd.get('targetMetric').trim(), color: fd.get('color') || 'amber' };
+  if (e) Object.assign(e, data);
+  else { const ne = Object.assign({ id: uid('e'), status: 'active', createdAt: today() }, data); S.epics.push(ne); return { created: ne }; }
+  return { updated: e };
+}
+function openQuestForm(id, preset = {}) {
+  const q = id ? questById(id) : null;
+  const month = q ? q.month : preset.month || (view === 'monthly' ? viewMonth : curMonth());
+  const epicId = q ? q.epicId : preset.epicId || '';
+  const epics = S.epics.filter(e => e.status !== 'done' || e.id === epicId).sort((a, b) => b.year - a.year);
+  openModal({
+    title: q ? 'Edit Quest' : 'Quest bulanan baru',
+    body: () => `<form class="form-grid" data-form="quest" data-id="${q ? q.id : ''}">
+      <label class="field">Judul Quest<input type="text" name="title" required maxlength="120" value="${esc(q?.title)}" placeholder="mis. Luncurkan landing page" autofocus></label>
+      <div class="form-grid two">
+        <label class="field">Bulan<input type="month" name="month" required value="${month}"></label>
+        <label class="field">Epic induk<select name="epicId"><option value="">— Quest mandiri —</option>${epics.map(e => `<option value="${e.id}" ${e.id === epicId ? 'selected' : ''}>${esc(e.title)} (${e.year})</option>`).join('')}</select></label>
+      </div>
+      <p class="muted small" style="margin:0">Quest otomatis jadi Boss: HP = jumlah task. Kalahkan sebelum akhir bulan untuk +300 XP.</p>
+      <div class="actions"><button type="button" class="btn ghost" data-act="modal-close">Batal</button><button class="btn primary">${q ? 'Simpan' : 'Buat Quest'}</button></div>
+    </form>`,
+  });
+}
+function openTaskForm(id, preset = {}) {
+  const t = id ? S.tasks.find(x => x.id === id) : null;
+  const date = t ? t.date : preset.date || viewDate;
+  openModal({
+    title: t ? 'Edit task' : 'Task baru',
+    body: () => `<form class="form-grid" data-form="task" data-id="${t ? t.id : ''}">
+      <label class="field">Judul<input type="text" name="title" required maxlength="200" value="${esc(t?.title)}" autofocus></label>
+      <div class="form-grid two">
+        <label class="field">Tanggal<input type="date" name="date" required value="${date}"></label>
+        <label class="field">Kesulitan<select name="difficulty">${Object.entries(DIFF).map(([k, v]) => `<option value="${k}" ${(t ? t.difficulty : 'medium') === k ? 'selected' : ''}>${v.label} (×${v.mult})</option>`).join('')}</select></label>
+      </div>
+      <label class="field">Quest<select name="questId">${questOptions(t ? t.questId : preset.questId || '')}</select></label>
+      ${t && t.xpAwarded ? `<p class="muted small" style="margin:0">Task ini sudah memberi ${t.xpAwarded} XP. Mencentang ulang tidak memberi XP lagi.</p>` : ''}
+      <div class="actions">${t ? `<button type="button" class="btn ghost danger" data-act="del-task" data-id="${t.id}" style="margin-right:auto">Hapus</button>` : ''}<button type="button" class="btn ghost" data-act="modal-close">Batal</button><button class="btn primary">${t ? 'Simpan' : 'Tambah'}</button></div>
+    </form>`,
+  });
+}
+
+/* ---------- shop ---------- */
+let editingReward = null;
+function openShop() {
+  openModal({
+    title: '🛒 Reward Shop', wide: true,
+    body: () => {
+      const p = S.player, r = editingReward ? S.rewards.find(x => x.id === editingReward) : null;
+      return `<p class="spread" style="margin-top:0"><span class="muted">Tukar coin dengan hadiah nyata yang kamu tentukan sendiri.</span><span class="stat">🪙 <b>${fmt(p.coins)}</b></span></p>
+      ${S.rewards.length ? `<ul class="list">${S.rewards.map(x => `<li><span class="grow"><b>${esc(x.title)}</b> <span class="muted small">· ${x.cost} coin</span></span>
+        <button class="btn sm primary" data-act="redeem" data-id="${x.id}" ${p.coins < x.cost ? 'disabled' : ''}>Tukar</button>
+        <button class="icon-btn sm" data-act="edit-reward" data-id="${x.id}" aria-label="Edit ${esc(x.title)}">✎</button>
+        <button class="icon-btn sm" data-act="del-reward" data-id="${x.id}" aria-label="Hapus ${esc(x.title)}">🗑</button></li>`).join('')}</ul>` : '<div class="empty">Belum ada reward. Tambahkan hadiah kecil untuk dirimu sendiri.</div>'}
+      <form class="row" data-form="reward" data-id="${r ? r.id : ''}" style="margin-top:14px" autocomplete="off">
+        <input type="text" name="title" required maxlength="80" placeholder="mis. Nonton bioskop" value="${esc(r?.title)}" aria-label="Nama reward" style="flex:2;min-width:160px">
+        <input type="number" name="cost" required min="1" max="100000" placeholder="Harga" value="${r ? r.cost : ''}" aria-label="Harga coin" style="flex:1;min-width:90px">
+        <button class="btn primary">${r ? 'Simpan' : '＋ Reward'}</button>${r ? '<button type="button" class="btn ghost" data-act="cancel-reward">Batal</button>' : ''}
+      </form>
+      <p class="muted small">Coin didapat dari XP: sekitar 1 coin per 10 XP.</p>
+      ${S.redemptions.length ? `<div class="section-title">Riwayat penukaran</div><ul class="list">${S.redemptions.slice(-8).reverse().map(x => `<li><span class="grow">${esc(x.title)}</span><span class="muted small">−${x.cost} · ${x.at.slice(0, 10)}</span></li>`).join('')}</ul>` : ''}`;
+    },
+    onClose: () => { editingReward = null; },
+  });
+}
+
+/* ---------- settings / backup ---------- */
+function yearsWithData() {
+  const ys = new Set();
+  S.epics.forEach(e => ys.add(e.year)); S.quests.forEach(q => ys.add(Number(q.month.slice(0, 4)))); S.tasks.forEach(t => ys.add(Number(t.date.slice(0, 4))));
+  return [...ys].sort();
+}
+function openSettings() {
+  let hasBackup = false; try { hasBackup = !!localStorage.getItem(BACKUP_KEY); } catch (e) { }
+  const p = S.player, oldYears = yearsWithData().filter(y => y < curYear());
+  openModal({
+    title: '⚙️ Pengaturan', wide: true,
+    body: () => `<form class="form-grid" data-form="settings">
+      <div class="form-grid two">
+        <label class="field">Nama karakter<input type="text" name="name" maxlength="40" value="${esc(p.name)}"></label>
+        <label class="field">Tema<select name="theme"><option value="dark" ${S.settings.theme !== 'light' ? 'selected' : ''}>Gelap</option><option value="light" ${S.settings.theme === 'light' ? 'selected' : ''}>Terang</option></select></label>
+      </div>
+      <fieldset style="border:0;padding:0;margin:0"><legend class="muted small" style="font-weight:600;margin-bottom:6px">Avatar</legend>
+        <div class="chips">${AVATARS.map(a => `<label class="chip emoji"><input type="radio" name="avatar" value="${a}" ${a === p.avatar ? 'checked' : ''} aria-label="${a}"><span>${a}</span></label>`).join('')}</div></fieldset>
+      <label class="field">Minggu dimulai<select name="weekStart"><option value="monday" ${S.settings.weekStart !== 'sunday' ? 'selected' : ''}>Senin</option><option value="sunday" ${S.settings.weekStart === 'sunday' ? 'selected' : ''}>Minggu</option></select></label>
+      <div class="actions"><button class="btn primary">Simpan pengaturan</button></div>
+    </form>
+    <div class="section-title">Streak Freeze</div>
+    <p class="muted small" style="margin:0">Token tersisa bulan ini: <b>${p.streak.freezeAvailable}</b>. 1 token gratis tiap bulan, tidak menumpuk. Dipakai manual saat kemarin terlewat.</p>
+    <div class="section-title">Backup & data</div>
+    <div class="row">
+      <button class="btn" data-act="export">⬇️ Export JSON</button>
+      <button class="btn" data-act="import">⬆️ Import JSON</button>
+      ${hasBackup ? '<button class="btn ghost" data-act="restore-snapshot">↩️ Pulihkan snapshot sebelum import</button>' : ''}
+    </div>
+    <p class="muted small">Backup terakhir: ${S.meta.lastBackupAt ? dateLabel(S.meta.lastBackupAt) : 'belum pernah'}. Data hanya ada di browser ini — export rutin agar aman, dan untuk pindah perangkat.</p>
+    ${oldYears.length ? `<div class="row">${oldYears.map(y => `<button class="btn sm" data-act="archive-year" data-year="${y}">🗄️ Arsipkan ${y}</button>`).join('')}</div><p class="muted small">Arsip mengunduh data tahun itu ke file JSON lalu menghapusnya dari aplikasi.</p>` : ''}
+    <div class="section-title">Keyboard</div>
+    <p class="muted small" style="margin:0"><b>N</b> task baru · <b>/</b> cari · <b>1–3</b> pindah tab · <b>Esc</b> tutup dialog</p>
+    <div class="section-title">Zona bahaya</div>
+    <button class="btn danger" data-act="reset-all">Hapus semua data</button>`,
+  });
+}
+function exportData() {
+  S.meta.lastBackupAt = today(); saveNow();
+  download(`questline-backup-${today()}.json`, S);
+  toast('💾 Backup diunduh.'); render();
+  if (modal && modal.refreshOnExport) refreshModal();
+}
+function importData(text) {
+  let d; try { d = JSON.parse(text); } catch (e) { toast('File bukan JSON yang valid.', 'error'); return; }
+  const err = validateImport(d);
+  if (err) { toast('Import ditolak: ' + esc(err), 'error'); return; }
+  if (!confirm(`Import akan menimpa data saat ini (${S.tasks.length} task, ${S.quests.length} Quest, ${S.epics.length} Epic). Snapshot otomatis disimpan. Lanjutkan?`)) return;
+  try { localStorage.setItem(BACKUP_KEY, JSON.stringify(S)); } catch (e) { if (!confirm('Snapshot gagal disimpan (penyimpanan penuh). Tetap import?')) return; }
+  S = normalize(d); S.meta.onboarded = true; readOnly = false; loadError = null;
+  saveNow(); closeModal({ skipQueue: true }); runDayChecks(); render(); toast('✅ Data berhasil diimport.');
+}
+function archiveYear(y) {
+  const ys = String(y);
+  const epics = S.epics.filter(e => e.year === y), quests = S.quests.filter(q => q.month.startsWith(ys)), tasks = S.tasks.filter(t => t.date.startsWith(ys));
+  if (!epics.length && !quests.length && !tasks.length) { toast(`Tidak ada data ${y}.`); return false; }
+  const xpLog = Object.fromEntries(Object.entries(S.player.xpLog).filter(([d]) => d.startsWith(ys)));
+  download(`questline-arsip-${y}.json`, { schemaVersion: SCHEMA, type: 'questline-archive', year: y, archivedAt: isoLocal(new Date()), player: { name: S.player.name, xp: S.player.xp, level: levelFor(S.player.xp) }, epics, quests, tasks, xpLog });
+  const eIds = new Set(epics.map(e => e.id)), qIds = new Set(quests.map(q => q.id)), tIds = new Set(tasks.map(t => t.id));
+  S.epics = S.epics.filter(e => !eIds.has(e.id));
+  S.quests = S.quests.filter(q => !qIds.has(q.id)); S.quests.forEach(q => { if (eIds.has(q.epicId)) q.epicId = null; });
+  S.tasks = S.tasks.filter(t => !tIds.has(t.id)); S.tasks.forEach(t => { if (qIds.has(t.questId)) t.questId = null; });
+  for (const d of Object.keys(xpLog)) delete S.player.xpLog[d]; // total XP & level tetap
+  const ok = saveNow(); render();
+  if (ok) toast(`🗄️ Data ${y} diarsipkan (${tasks.length} task).`);
+  return ok;
+}
+function openQuotaDialog() {
+  const years = yearsWithData().filter(y => y < curYear());
+  openModal({
+    title: '⚠️ Penyimpanan penuh',
+    body: () => `<p style="margin-top:0">Browser menolak menyimpan karena kapasitas localStorage (~5 MB) habis. Perubahan terakhir belum tersimpan.</p>
+      ${years.length ? `<p>Arsipkan data tahun lama ke file JSON untuk mengosongkan ruang:</p><div class="row">${years.map(y => `<button class="btn primary" data-act="archive-year" data-year="${y}">Arsipkan ${y}</button>`).join('')}</div>`
+        : '<p>Tidak ada data tahun lalu untuk diarsipkan. Export data sekarang, lalu hapus task lama yang tidak diperlukan.</p>'}
+      <div class="actions"><button class="btn" data-act="export">Export semua</button><button class="btn ghost" data-act="modal-close">Tutup</button></div>`,
+  });
+}
+
+/* ---------- reviews ---------- */
+function monthStats(m) {
+  const done = S.tasks.filter(t => t.done && t.completedAt && t.completedAt.startsWith(m));
+  const cm = curMonth();
+  const days = m === cm ? parseYmd(today()).getDate() : m < cm ? daysInMonth(m) : 0;
+  const qs = S.quests.filter(q => q.month === m);
+  return { done: done.length, avg: days ? done.length / days : 0, qDone: qs.filter(q => questStats(q).complete).length, qTotal: qs.filter(q => q.status !== 'closed').length, xp: xpInRange(m), run: longestRun(m) };
+}
+function openReview(m, auto) {
+  const st = monthStats(m), cm = curMonth();
+  const pending = auto ? S.quests.filter(q => q.month < cm && q.status === 'active' && !questStats(q).complete) : [];
+  openModal({
+    title: `📊 Review ${monthLabel(m)}`, wide: true,
+    body: () => `<div class="statgrid">
+        <div class="card"><span class="muted small">Task selesai</span><b>${st.done}</b></div>
+        <div class="card"><span class="muted small">Rata-rata/hari</span><b>${st.avg.toFixed(1)}</b></div>
+        <div class="card"><span class="muted small">Quest tuntas</span><b>${st.qDone}/${st.qTotal}</b></div>
+        <div class="card"><span class="muted small">XP diperoleh</span><b>${fmt(st.xp)}</b></div>
+        <div class="card"><span class="muted small">Streak terpanjang</span><b>${st.run} hari</b></div>
+      </div>
+      ${pending.length ? `<div class="section-title">Quest belum tuntas</div><form data-form="review-quests"><ul class="list">${pending.map(q => { const s = questStats(q); return `<li><span class="grow"><b>${esc(q.title)}</b> <span class="muted small">· ${monthShort(q.month)} · ${s.done}/${s.total}</span></span>
+          <label class="chip"><input type="radio" name="q-${q.id}" value="carry" checked><span>Lanjutkan</span></label><label class="chip"><input type="radio" name="q-${q.id}" value="close"><span>Tutup</span></label></li>`; }).join('')}</ul>
+          <div class="actions"><button class="btn primary">Terapkan</button></div></form>` : ''}
+      ${auto ? `<div class="section-title">Bulan baru: ${monthLabel(cm)}</div><div class="row"><button class="btn primary" data-act="review-new-quest">＋ Buat Quest bulan ini</button><button class="btn" data-act="export">💾 Backup sekarang</button></div>` : ''}
+      <div class="actions"><button class="btn ghost" data-act="modal-close">Tutup</button></div>`,
+    onClose: () => { if (auto) { S.meta.lastReviewMonth = cm; save(); } },
+  });
+}
+function openYearReview(y, auto) {
+  const ys = String(y), es = S.epics.filter(e => e.year === y);
+  const doneEs = es.filter(e => epicStats(e).complete), unfinished = es.filter(e => !epicStats(e).complete);
+  const tasks = S.tasks.filter(t => t.done && t.completedAt && t.completedAt.startsWith(ys)).length;
+  const cy = curYear();
+  openModal({
+    title: `📜 Rekap ${y}`, wide: true,
+    body: () => `<div class="statgrid">
+        <div class="card"><span class="muted small">XP tahun ini</span><b>${fmt(xpInRange(ys))}</b></div>
+        <div class="card"><span class="muted small">Level sekarang</span><b>${levelFor(S.player.xp)}</b></div>
+        <div class="card"><span class="muted small">Task selesai</span><b>${fmt(tasks)}</b></div>
+        <div class="card"><span class="muted small">Epic tuntas</span><b>${doneEs.length}/${es.length}</b></div>
+        <div class="card"><span class="muted small">Streak terpanjang</span><b>${longestRun(ys)} hari</b></div>
+      </div>
+      ${heatmap(y)}
+      ${doneEs.length ? `<div class="section-title">Epic tuntas</div><ul class="list">${doneEs.map(e => `<li>👑 <span class="grow">${esc(e.title)}</span></li>`).join('')}</ul>` : ''}
+      ${auto && unfinished.length ? `<div class="section-title">Bawa Epic ke ${cy}?</div><form data-form="carry-epics"><ul class="list">${unfinished.map(e => `<li><label class="row grow" style="cursor:pointer"><input type="checkbox" name="carry" value="${e.id}" style="width:20px;height:20px"> ${esc(e.title)} <span class="muted small">· ${pct(epicStats(e).pct)}%</span></label></li>`).join('')}</ul><div class="actions"><button class="btn">Bawa yang dipilih</button></div></form>` : ''}
+      <div class="actions" style="margin-top:14px">
+        ${y < cy ? `<button class="btn" data-act="archive-year" data-year="${y}">🗄️ Arsipkan ${y} ke JSON</button>` : ''}
+        ${auto ? `<button class="btn primary" data-act="year-new-epic">＋ Tulis Epic ${cy}</button>` : ''}
+        <button class="btn ghost" data-act="modal-close">Tutup</button></div>`,
+    onClose: () => { if (auto) { S.meta.lastYearReview = cy; save(); } },
+  });
+}
+function openCarryOver() {
+  const td = today();
+  const list = S.tasks.filter(t => !t.done && t.date < td && !t.recurrence && t.date >= addDays(td, -30));
+  if (!list.length) return false;
+  openModal({
+    title: '⏭️ Task tertunda',
+    body: () => `<p style="margin-top:0" class="muted">Ada ${list.length} task yang belum selesai dari hari sebelumnya. Pindahkan ke hari ini?</p>
+      <form data-form="carry"><ul class="list">${list.map(t => `<li><label class="row grow" style="cursor:pointer"><input type="checkbox" name="t" value="${t.id}" checked style="width:20px;height:20px"> <span class="grow">${esc(t.title)}</span><span class="muted small">${t.date.slice(5)}</span></label></li>`).join('')}</ul>
+      <div class="actions"><button type="button" class="btn ghost" data-act="modal-close">Biarkan</button><button class="btn primary">Pindahkan ke hari ini</button></div></form>`,
+    onClose: () => { S.meta.lastCarryPrompt = td; save(); },
+  });
+  return true;
+}
+
+/* ---------- onboarding ---------- */
+const ob = { step: 1, epicId: null, questId: null };
+function openOnboarding() {
+  if (!S.meta.onboardingStartedAt) S.meta.onboardingStartedAt = new Date().toISOString();
+  openModal({ title: 'Selamat datang di Questline', dismissable: false, body: onboardingBody });
+}
+function onboardingBody() {
+  const steps = `<div class="steps" aria-label="Langkah ${ob.step} dari 4">${[1, 2, 3, 4].map(i => `<i class="${i <= ob.step ? 'on' : ''}"></i>`).join('')}</div>`;
+  const p = S.player;
+  if (ob.step === 1) return `${steps}<form class="form-grid" data-form="ob1">
+      <p style="margin:0" class="muted">To-do list yang terasa seperti main game. Semua data tersimpan di browser ini — tanpa akun, tanpa server.</p>
+      <label class="field">Nama karakter<input type="text" name="name" required maxlength="40" value="${esc(p.name)}" placeholder="mis. Ridzal" autofocus></label>
+      <fieldset style="border:0;padding:0;margin:0"><legend class="muted small" style="font-weight:600;margin-bottom:6px">Pilih avatar</legend>
+      <div class="chips">${AVATARS.map(a => `<label class="chip emoji"><input type="radio" name="avatar" value="${a}" ${a === p.avatar ? 'checked' : ''} aria-label="${a}"><span>${a}</span></label>`).join('')}</div></fieldset>
+      <div class="actions"><button class="btn primary">Lanjut</button></div></form>`;
+  if (ob.step === 2) return `${steps}<form class="form-grid" data-form="ob2">
+      <h3>Tulis Epic tahunan pertamamu</h3>
+      <p style="margin:0" class="muted small">Epic = tujuan besar ${curYear()}. Semua Quest dan task akan mengisi progress-nya.</p>
+      <label class="field">Judul Epic<input type="text" name="title" required maxlength="120" placeholder="mis. Bangun agensi AI marketing" autofocus></label>
+      <div class="form-grid two"><label class="field">Kategori<input type="text" name="category" list="cats" maxlength="40" placeholder="Karier"></label>
+      <label class="field">Target terukur<input type="text" name="targetMetric" maxlength="120" placeholder="mis. 3 klien retainer"></label></div>
+      <datalist id="cats">${CATEGORIES.map(c => `<option value="${c}">`).join('')}</datalist>
+      <input type="hidden" name="year" value="${curYear()}">
+      <fieldset style="border:0;padding:0;margin:0"><legend class="muted small" style="font-weight:600;margin-bottom:6px">Warna</legend>
+      <div class="swatches">${Object.entries(COLORS).map(([k, v], i) => `<label class="swatch"><input type="radio" name="color" value="${k}" ${i === 0 ? 'checked' : ''} aria-label="${k}"><span style="--c:${v}"></span></label>`).join('')}</div></fieldset>
+      <div class="actions"><button type="button" class="btn ghost" data-act="ob-back">Kembali</button><button class="btn primary">Lanjut</button></div></form>`;
+  if (ob.step === 3) { const e = epicById(ob.epicId); return `${steps}<form class="form-grid" data-form="ob3">
+      <h3>Pecah jadi Quest untuk ${monthLabel(curMonth())}</h3>
+      <p style="margin:0" class="muted small">Langkah konkret bulan ini untuk “${esc(e?.title)}”. Quest otomatis jadi Boss yang harus kamu kalahkan.</p>
+      <label class="field">Judul Quest<input type="text" name="title" required maxlength="120" placeholder="mis. Luncurkan landing page" autofocus></label>
+      <div class="actions"><button class="btn primary">Lanjut</button></div></form>`; }
+  return `${steps}<form class="form-grid" data-form="ob4">
+      <h3>Tiga task untuk hari ini</h3>
+      <p style="margin:0" class="muted small">Langkah kecil yang bisa selesai hari ini. Minimal satu.</p>
+      ${[1, 2, 3].map(i => `<input type="text" name="t${i}" maxlength="200" placeholder="Task ${i}" aria-label="Task ${i}" ${i === 1 ? 'required autofocus' : ''}>`).join('')}
+      <div class="actions"><button class="btn primary">Mulai bermain ⚔️</button></div></form>`;
+}
+
+/* ---------- search ---------- */
+function openSearch() {
+  openModal({
+    title: '🔍 Cari',
+    body: () => `<input type="search" id="search-input" placeholder="Cari task, Quest, atau Epic…" aria-label="Kata kunci" autofocus autocomplete="off"><div class="search-results" id="search-results" aria-live="polite"></div>`,
+    onMount: box => {
+      const inp = box.querySelector('#search-input'), out = box.querySelector('#search-results');
+      inp.addEventListener('input', () => {
+        const q = inp.value.trim().toLowerCase();
+        if (!q) { out.innerHTML = ''; return; }
+        const hit = s => (s || '').toLowerCase().includes(q);
+        const rs = [
+          ...S.epics.filter(e => hit(e.title) || hit(e.targetMetric)).map(e => `<button data-act="goto" data-view="yearly" data-year="${e.year}"><span class="dot" style="--c:${epicColor(e)}"></span><span class="grow">${esc(e.title)}</span><span class="pill">Epic ${e.year}</span></button>`),
+          ...S.quests.filter(x => hit(x.title)).map(x => `<button data-act="goto" data-view="monthly" data-month="${x.month}"><span class="dot" style="--c:${questColor(x)}"></span><span class="grow">${esc(x.title)}</span><span class="pill">Quest ${monthShort(x.month)}</span></button>`),
+          ...S.tasks.filter(t => hit(t.title)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30).map(t => `<button data-act="goto" data-view="daily" data-date="${t.date}"><span>${t.done ? '✅' : '⬜'}</span><span class="grow">${esc(t.title)}</span><span class="pill">${t.date}</span></button>`),
+        ];
+        out.innerHTML = rs.length ? `<div style="display:flex;flex-direction:column;gap:6px">${rs.join('')}</div>` : '<p class="muted">Tidak ada hasil.</p>';
+      });
+    },
+  });
+}
+
+/* ---------- action handlers ---------- */
+const A = {
+  'tab': el => { view = el.dataset.view; render(); },
+  'toggle': el => toggleTask(el.dataset.id, el),
+  'day-prev': () => { viewDate = addDays(viewDate, -1); render(); },
+  'day-next': () => { viewDate = addDays(viewDate, 1); render(); },
+  'day-today': () => { viewDate = today(); render(); },
+  'month-prev': () => { viewMonth = addMonths(viewMonth, -1); render(); },
+  'month-next': () => { viewMonth = addMonths(viewMonth, 1); render(); },
+  'year-prev': () => { viewYear--; render(); },
+  'year-next': () => { viewYear++; render(); },
+  'edit-task': el => openTaskForm(el.dataset.id),
+  'del-task': el => {
+    const t = S.tasks.find(x => x.id === el.dataset.id); if (!t || !confirm(`Hapus task "${t.title}"?`)) return;
+    S.tasks = S.tasks.filter(x => x !== t); if (modal) closeModal(); save(); render(); announce('Task dihapus.');
+  },
+  'del-recur': el => {
+    const r = S.recurring.find(x => x.id === el.dataset.id); if (!r || !confirm(`Hentikan pengulangan "${r.title}"? Task yang sudah ada tidak dihapus.`)) return;
+    S.recurring = S.recurring.filter(x => x !== r); save(); render();
+  },
+  'add-task-quest': el => { const q = questById(el.dataset.id); openTaskForm(null, { questId: q.id, date: q.month === curMonth() ? today() : q.month + '-01' }); },
+  'new-quest': el => openQuestForm(null, { epicId: el.dataset.epic, month: el.dataset.epic ? (epicById(el.dataset.epic).year === curYear() ? curMonth() : epicById(el.dataset.epic).year + '-01') : undefined }),
+  'edit-quest': el => openQuestForm(el.dataset.id),
+  'close-quest': el => { const q = questById(el.dataset.id); q.status = 'closed'; save(); render(); },
+  'reopen-quest': el => { const q = questById(el.dataset.id); q.status = 'active'; save(); render(); },
+  'del-quest': el => {
+    const q = questById(el.dataset.id); if (!confirm(`Hapus Quest "${q.title}"? Task di dalamnya tetap ada, hanya dilepas dari Quest.`)) return;
+    S.quests = S.quests.filter(x => x !== q); S.tasks.forEach(t => { if (t.questId === q.id) t.questId = null; });
+    S.recurring.forEach(r => { if (r.questId === q.id) r.questId = null; }); save(); render();
+  },
+  'new-epic': () => openEpicForm(),
+  'edit-epic': el => openEpicForm(el.dataset.id),
+  'del-epic': el => {
+    const e = epicById(el.dataset.id); if (!confirm(`Hapus Epic "${e.title}"? Quest di bawahnya tetap ada sebagai Quest mandiri.`)) return;
+    S.epics = S.epics.filter(x => x !== e); S.quests.forEach(q => { if (q.epicId === e.id) q.epicId = null; }); save(); render();
+  },
+  'open-shop': () => openShop(),
+  'redeem': el => {
+    const r = S.rewards.find(x => x.id === el.dataset.id); if (!r || S.player.coins < r.cost) return;
+    if (!confirm(`Tukar ${r.cost} coin untuk "${r.title}"?`)) return;
+    S.player.coins -= r.cost; S.redemptions.push({ id: uid('x'), rewardId: r.id, title: r.title, cost: r.cost, at: isoLocal(new Date()) });
+    save(); render(); refreshModal(); toast(`🎁 Selamat menikmati: <b>${esc(r.title)}</b>`, 'badge', true);
+  },
+  'edit-reward': el => { editingReward = el.dataset.id; refreshModal(); },
+  'cancel-reward': () => { editingReward = null; refreshModal(); },
+  'del-reward': el => { const r = S.rewards.find(x => x.id === el.dataset.id); if (!r || !confirm(`Hapus reward "${r.title}"?`)) return; S.rewards = S.rewards.filter(x => x !== r); save(); refreshModal(); },
+  'open-settings': () => openSettings(),
+  'open-search': () => openSearch(),
+  'toggle-theme': () => { S.settings.theme = S.settings.theme === 'light' ? 'dark' : 'light'; save(); render(); },
+  'export': () => exportData(),
+  'import': () => $('#import-file').click(),
+  'restore-snapshot': () => {
+    let raw; try { raw = localStorage.getItem(BACKUP_KEY); } catch (e) { }
+    if (!raw || !confirm('Pulihkan snapshot terakhir sebelum import? Data saat ini akan ditimpa.')) return;
+    try { const d = JSON.parse(raw); if (validateImport(d)) throw new Error(validateImport(d)); S = normalize(d); saveNow(); closeModal(); render(); toast('↩️ Snapshot dipulihkan.'); } catch (e) { toast('Snapshot rusak: ' + esc(e.message), 'error'); }
+  },
+  'archive-year': el => {
+    const y = Number(el.dataset.year);
+    if (!confirm(`Arsipkan semua data ${y}? File JSON akan diunduh, lalu data ${y} dihapus dari aplikasi. Total XP dan level tidak berubah.`)) return;
+    if (archiveYear(y)) closeModal();
+  },
+  'reset-all': () => {
+    if (!confirm('Hapus SEMUA data Questline di browser ini? Tindakan ini tidak bisa dibatalkan. Export dulu jika perlu.')) return;
+    try { localStorage.removeItem(KEY); } catch (e) { }
+    S = freshState(); readOnly = false; loadError = null; Object.assign(ob, { step: 1, epicId: null, questId: null });
+    closeModal({ skipQueue: true }); render(); openOnboarding();
+  },
+  'use-freeze': () => {
+    const s = S.player.streak, td = today();
+    if (!streakInfo().rescuable) return;
+    s.freezeAvailable--; s.frozenDates.push(addDays(td, -1));
+    save(); render(); toast(`❄️ Streak Freeze dipakai. Streak ${s.current} hari aman — selesaikan 1 task hari ini untuk melanjutkan.`);
+  },
+  'dismiss-backup': () => { S.meta.backupDismissed = today(); save(); render(); },
+  'open-review': el => openReview(el.dataset.month, false),
+  'open-year-review': el => openYearReview(Number(el.dataset.year), false),
+  'review-new-quest': () => { closeModal({ skipQueue: true }); view = 'monthly'; viewMonth = curMonth(); render(); openQuestForm(null, { month: curMonth() }); },
+  'year-new-epic': () => { closeModal({ skipQueue: true }); view = 'yearly'; viewYear = curYear(); render(); openEpicForm(); },
+  'goto': el => {
+    view = el.dataset.view;
+    if (el.dataset.date) viewDate = el.dataset.date;
+    if (el.dataset.month) viewMonth = el.dataset.month;
+    if (el.dataset.year) viewYear = Number(el.dataset.year);
+    closeModal(); render();
+  },
+  'modal-close': () => closeModal(),
+  'ob-back': () => { ob.step = Math.max(1, ob.step - 1); drawModal(); },
+  'load-export-raw': () => { const blob = new Blob([loadError.raw], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `questline-raw-${today()}.json`; a.click(); },
+  'load-reset': () => {
+    if (!confirm('Mulai dengan data kosong? Data lama di browser akan ditimpa. Pastikan sudah export data mentah.')) return;
+    readOnly = false; loadError = null; S = freshState(); saveNow(); closeModal({ skipQueue: true }); render(); openOnboarding();
+  },
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const fn = A[el.dataset.act]; if (fn) { e.preventDefault(); fn(el, e); }
+});
+document.addEventListener('change', e => {
+  if (e.target.matches('[data-act-change=rule]')) { const box = $('#quick-days'); if (box) box.hidden = e.target.value !== 'days'; }
+});
+$('#import-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => importData(String(r.result)); r.readAsText(f); e.target.value = '';
+});
+
+/* ---------- form handlers ---------- */
+const F = {
+  quick: (f, fd) => {
+    const title = (fd.get('title') || '').trim(); if (!title) return;
+    const difficulty = fd.get('difficulty'), questId = fd.get('questId') || null, rule = fd.get('rule');
+    quickPrefs.difficulty = difficulty; quickPrefs.questId = questId || '';
+    if (rule) {
+      const days = fd.getAll('days').map(Number);
+      if (rule === 'days' && !days.length) { toast('Pilih minimal satu hari untuk pengulangan.', 'error'); return; }
+      const r = { id: uid('r'), title, difficulty, questId, rule, days: rule === 'days' ? days : [], startDate: viewDate, lastGenerated: null, createdAt: today() };
+      S.recurring.push(r);
+      if (viewDate <= today() && recurMatches(r, viewDate)) S.tasks.push(newTask({ title, date: viewDate, difficulty, questId, recurrence: { templateId: r.id } }));
+      if (viewDate === today()) r.lastGenerated = today();
+      toast(`🔁 Task berulang dibuat: ${esc(RULE_LABEL(r))}`);
+    } else {
+      S.tasks.push(newTask({ title, date: viewDate, difficulty, questId }));
+    }
+    save(); render(); announce(`Task "${title}" ditambahkan.`);
+    const inp = document.querySelector('[data-fkey=quick]'); if (inp) inp.focus();
+  },
+  task: (f, fd) => {
+    const id = f.dataset.id, title = fd.get('title').trim(); if (!title) return;
+    const data = { title, date: fd.get('date'), difficulty: fd.get('difficulty'), questId: fd.get('questId') || null };
+    if (id) Object.assign(S.tasks.find(t => t.id === id), data); else S.tasks.push(newTask(data));
+    closeModal(); save(); render();
+  },
+  quest: (f, fd) => {
+    const id = f.dataset.id, title = fd.get('title').trim(), month = fd.get('month');
+    if (!title || !/^\d{4}-\d{2}$/.test(month)) { toast('Judul dan bulan wajib diisi.', 'error'); return; }
+    const data = { title, month, epicId: fd.get('epicId') || null };
+    if (id) Object.assign(questById(id), data);
+    else S.quests.push(Object.assign({ id: uid('q'), status: 'active', bossDefeatedAt: null, createdAt: today() }, data));
+    closeModal(); viewMonth = month; save(); render();
+  },
+  epic: (f, fd) => {
+    const res = saveEpicFromForm(f, fd, f.dataset.id || null);
+    if (typeof res === 'string') { toast(esc(res), 'error'); return; }
+    closeModal(); save(); render();
+  },
+  reward: (f, fd) => {
+    const title = fd.get('title').trim(), cost = Math.round(Number(fd.get('cost')));
+    if (!title || !(cost > 0)) return;
+    if (f.dataset.id) Object.assign(S.rewards.find(r => r.id === f.dataset.id), { title, cost });
+    else S.rewards.push({ id: uid('r'), title, cost });
+    editingReward = null; save(); refreshModal();
+  },
+  settings: (f, fd) => {
+    S.player.name = fd.get('name').trim() || S.player.name; S.player.avatar = fd.get('avatar') || S.player.avatar;
+    S.settings.theme = fd.get('theme'); S.settings.weekStart = fd.get('weekStart');
+    save(); render(); toast('Pengaturan disimpan.');
+  },
+  carry: (f, fd) => {
+    const ids = new Set(fd.getAll('t')), td = today();
+    S.tasks.forEach(t => { if (ids.has(t.id)) t.date = td; });
+    closeModal(); viewDate = td; save(); render(); toast(`⏭️ ${ids.size} task dipindah ke hari ini.`);
+  },
+  'review-quests': (f, fd) => {
+    const cm = curMonth(); let carried = 0, closed = 0;
+    for (const [k, v] of fd.entries()) { const q = questById(k.slice(2)); if (!q) continue; if (v === 'carry') { q.month = cm; carried++; } else { q.status = 'closed'; closed++; } }
+    save(); render(); toast(`${carried} Quest dilanjutkan, ${closed} ditutup.`);
+    f.remove();
+  },
+  'carry-epics': (f, fd) => {
+    const cy = curYear(), ids = fd.getAll('carry');
+    if (activeEpicCount(cy) + ids.length > MAX_ACTIVE_EPICS) { toast(`Maksimal ${MAX_ACTIVE_EPICS} Epic aktif di ${cy}.`, 'error'); return; }
+    ids.forEach(id => { const e = epicById(id); if (e) e.year = cy; });
+    save(); render(); toast(`${ids.length} Epic dibawa ke ${cy}.`); f.remove();
+  },
+  ob1: (f, fd) => { S.player.name = fd.get('name').trim(); S.player.avatar = fd.get('avatar') || '🧙'; ob.step = 2; save(); drawModal(); },
+  ob2: (f, fd) => {
+    if (ob.epicId && epicById(ob.epicId)) { const e = epicById(ob.epicId); e.title = fd.get('title').trim(); e.category = fd.get('category').trim() || 'Umum'; e.targetMetric = fd.get('targetMetric').trim(); e.color = fd.get('color'); }
+    else { const res = saveEpicFromForm(f, fd, null); if (typeof res === 'string') { toast(esc(res), 'error'); return; } ob.epicId = res.created.id; }
+    ob.step = 3; save(); drawModal();
+  },
+  ob3: (f, fd) => {
+    const q = { id: uid('q'), epicId: ob.epicId, title: fd.get('title').trim(), month: curMonth(), status: 'active', bossDefeatedAt: null, createdAt: today() };
+    S.quests.push(q); ob.questId = q.id; ob.step = 4; save(); drawModal();
+  },
+  ob4: (f, fd) => {
+    const td = today();
+    ['t1', 't2', 't3'].map(k => (fd.get(k) || '').trim()).filter(Boolean).forEach(title => S.tasks.push(newTask({ title, date: td, difficulty: 'medium', questId: ob.questId })));
+    S.meta.onboarded = true; S.meta.lastReviewMonth = curMonth(); S.meta.lastYearReview = curYear(); S.meta.lastCarryPrompt = td;
+    view = 'daily'; viewDate = td; quickPrefs.questId = ob.questId;
+    closeModal(); saveNow(); render();
+    toast('⚔️ Petualangan dimulai! Centang satu task untuk membuka badge pertama.');
+    const first = document.querySelector('.check'); if (first) first.focus();
+  },
+};
+document.addEventListener('submit', e => {
+  const f = e.target, fn = F[f.dataset.form]; if (!fn) return;
+  e.preventDefault(); fn(f, new FormData(f));
+});
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown', e => {
+  if (modal) {
+    if (e.key === 'Escape' && modal.dismissable) { e.preventDefault(); closeModal(); return; }
+    if (e.key === 'Tab') { // focus trap
+      const els = [...$('#modal-root .modal').querySelectorAll('button,input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent !== null);
+      if (!els.length) return;
+      const first = els[0], last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    return;
+  }
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.metaKey || e.ctrlKey || e.altKey) {
+    if (e.key === 'Escape' && tag === 'input') e.target.blur();
+    return;
+  }
+  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); if (view !== 'daily') { view = 'daily'; render(); } const i = document.querySelector('[data-fkey=quick]'); if (i) i.focus(); }
+  else if (e.key === '/') { e.preventDefault(); openSearch(); }
+  else if (['1', '2', '3'].includes(e.key)) { view = ['daily', 'monthly', 'yearly'][Number(e.key) - 1]; render(); document.getElementById('tab-' + view).focus(); }
+  else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target.classList.contains('tab')) {
+    const order = ['daily', 'monthly', 'yearly']; view = order[(order.indexOf(view) + (e.key === 'ArrowRight' ? 1 : 2)) % 3]; render(); document.getElementById('tab-' + view).focus();
+  }
+});
+
+/* ---------- startup ---------- */
+async function detectPrivate() {
+  if (!storageOk) return true;
+  try { if (navigator.storage && navigator.storage.estimate) { const { quota } = await navigator.storage.estimate(); if (quota && quota < 120 * 1024 * 1024) return true; } } catch (e) { }
+  return false;
+}
+function startupFlow() {
+  if (loadError) {
+    queueModal(() => openModal({
+      title: '⚠️ Data tidak bisa dimuat', dismissable: false,
+      body: () => `<p style="margin-top:0">${loadError.type === 'version' ? `Data di browser ini memakai skema versi <b>${esc(loadError.v)}</b>, lebih baru dari yang didukung aplikasi ini (versi ${SCHEMA}). Gunakan versi Questline yang lebih baru.` : 'Data tersimpan rusak dan tidak bisa dibaca.'}</p>
+        <p class="muted">Aplikasi tidak menyimpan apa pun sampai kamu memilih. Export data mentah dulu agar tidak hilang.</p>
+        <div class="actions"><button class="btn" data-act="load-export-raw">⬇️ Export data mentah</button><button class="btn" data-act="import">⬆️ Import file lain</button><button class="btn danger" data-act="load-reset">Mulai baru</button></div>`,
+    }));
+    return;
+  }
+  if (!S.meta.onboarded) { queueModal(openOnboarding); return; }
+  if (S.meta.lastYearReview < curYear()) queueModal(() => openYearReview(curYear() - 1, true));
+  if (S.meta.lastReviewMonth !== curMonth()) queueModal(() => openReview(addMonths(curMonth(), -1), true));
+  if (S.meta.lastCarryPrompt !== today()) queueModal(() => { if (!openCarryOver()) { S.meta.lastCarryPrompt = today(); save(); nextQueued(); } });
+}
+let lastDay = today();
+setInterval(() => {
+  if (today() === lastDay) return;
+  const prevDay = lastDay; lastDay = today();
+  runDayChecks();
+  if (viewDate === prevDay) viewDate = lastDay;
+  if (!modal) { render(); startupFlow(); }
+}, 60 * 1000);
+
+if (!readOnly) runDayChecks();
+render();
+startupFlow();
+detectPrivate().then(isPrivate => {
+  let warned = false; try { warned = sessionStorage.getItem('questline.privateWarned') === '1'; } catch (e) { }
+  if (isPrivate && !warned) {
+    try { sessionStorage.setItem('questline.privateWarned', '1'); } catch (e) { }
+    toast('🕶️ Sepertinya kamu memakai mode penyamaran atau penyimpanan terbatas. Data bisa hilang saat tab ditutup — export JSON secara rutin.', 'error');
+  }
+});
+</script>
+</body>
+</html>
